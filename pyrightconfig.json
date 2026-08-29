@@ -1,0 +1,7 @@
+{
+  "pythonPath": "apps/integration/.venv/bin/python",
+  "venvPath": "apps/integration",
+  "venv": ".venv",
+  "pythonVersion": "3.13",
+  "extraPaths": ["apps/integration/src"]
+}
