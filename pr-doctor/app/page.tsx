@@ -71,7 +71,10 @@ export default function Home() {
           <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 13, fontWeight: 600, letterSpacing: '0.04em', color: 'var(--plex)' }}>
             PR Doctor
           </span>
-          <span className="eyebrow">IBM BOB 2.0</span>
+          <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
+            <Link href="/how-it-works" style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, color: 'var(--muted)', textDecoration: 'none', letterSpacing: '0.06em', textTransform: 'uppercase' }}>How it works</Link>
+            <span className="eyebrow">IBM BOB 2.0</span>
+          </div>
         </div>
       </header>
 
