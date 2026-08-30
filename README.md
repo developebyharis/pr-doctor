@@ -7,6 +7,23 @@ reviewers a structured risk report before they open a single diff.
 
 ---
 
+## Project Details
+
+PR Doctor is a pull request agent that orchestrates different subagents to ensure
+code is ready to be pushed. The subagents are:
+
+- **Code-Change** — finds what changed
+- **Tester** — checks existing tests and finds missing coverage
+- **Security** — finds potential vulnerabilities
+  - Create an agent that tries to break your code by finding vulnerabilities in repo
+  - Document them
+  - Patch them
+- **Documentation** — updates docs accordingly
+
+The PR Doctor will use context provided by a Feature Graph built with Graphify.
+
+---
+
 ## Repository Layout
 
 ```
