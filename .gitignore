@@ -1,14 +1,3 @@
-# ============================================
-# WATSONX HACKATHON - SECURITY .GITIGNORE
-# ============================================
-# DO NOT REMOVE OR MODIFY SECURITY PATTERNS
-# ============================================
-
-# ============================================
-# AI ASSISTANT SESSION FILES (CRITICAL)
-# ============================================
-# NOTE: bob_sessions/ folder is REQUIRED for project submission
-# Live session files are excluded, but exported reports must be included
 .copilot/
 .cursor/
 .codeium/
@@ -86,7 +75,8 @@ __pycache__/
 venv/
 env/
 ENV/
-.venv
+.venv/
+**/.venv/
 
 # Java
 *.class

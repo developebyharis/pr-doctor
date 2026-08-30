@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pr-doctor-integration"
+version = "0.1.0"
+description = "PR Doctor — Ingestion & MCP bridge for IBM BOB 2.0 hackathon"
+requires-python = ">=3.13"
+dependencies = [
+    # GitHub API
+    "PyGithub>=2.3.0",
+    # Data validation
+    "pydantic>=2.7.0",
+    "pydantic-settings>=2.3.0",
+    # FastAPI for local REST API
+    "fastapi>=0.111.0",
+    "uvicorn[standard]>=0.30.0",
+    # Local storage
+    "tinydb>=4.8.0",
+    # CLI
+    "typer>=0.12.0",
+    # Env vars
+    "python-dotenv>=1.0.0",
+]
+
+[project.scripts]
+pr-doctor = "integration.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/integration"]
+
+[tool.hatch.envs.default]
+python = "3.13"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
