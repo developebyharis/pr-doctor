@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PR Doctor — Investigation (visual reference)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ground:#E9ECEF;
+    --chart:#FFFFFF;
+    --ink:#14181C;
+    --muted:#68757F;
+    --rule:#D2D8DD;
+    --rule-strong:#AEB8C0;
+    --block:#B3261E;
+    --block-wash:#FBEDEC;
+    --caution:#8A5A00;
+    --clear:#1F6B45;
+    --plex:#24408E;
+    --plex-wash:#EDF0F8;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--ground);
+    color:var(--ink);
+    font-family:"IBM Plex Sans",system-ui,sans-serif;
+    font-size:15px;line-height:1.5;
+    padding:28px 20px 80px;
+  }
+  .wrap{max-width:1060px;margin:0 auto}
+
+  .eyebrow{
+    font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:500;
+    letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+  }
+  .mono{font-family:"IBM Plex Mono",monospace}
+
+  /* ---------- signature: the triage tag ---------- */
+  .tag{
+    position:relative;background:var(--chart);
+    border:1px solid var(--rule-strong);
+    border-left:8px solid var(--block);
+    padding:22px 26px 22px 30px;
+    display:grid;grid-template-columns:auto 1fr auto;gap:26px;align-items:center;
+  }
+  .tag::before{ /* punch hole */
+    content:"";position:absolute;left:-4px;top:50%;transform:translateY(-50%);
+    width:0;height:0;
+  }
+  .stamp{
+    font-family:"IBM Plex Sans Condensed",sans-serif;font-weight:700;
+    font-size:52px;line-height:.9;letter-spacing:-.01em;color:var(--block);
+    border:3px solid var(--block);padding:8px 16px 10px;
+    transform:rotate(-1.5deg);
+  }
+  .conf{display:flex;flex-direction:column;gap:3px}
+  .conf .n{font-family:"IBM Plex Sans Condensed",sans-serif;font-weight:700;font-size:34px;line-height:1}
+  .rationale{max-width:48ch;font-size:14.5px}
+  @media(max-width:800px){.tag{grid-template-columns:1fr;gap:16px}.stamp{justify-self:start;font-size:42px}}
+
+  /* ---------- chart sections ---------- */
+  .chart{background:var(--chart);border:1px solid var(--rule-strong);border-top:0}
+  .sec{padding:20px 26px;border-bottom:1px solid var(--rule)}
+  .sec:last-child{border-bottom:0}
+  .sec h2{
+    font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;
+    letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+    margin:0 0 14px;
+  }
+
+  .idline{display:flex;flex-wrap:wrap;gap:6px 22px;align-items:baseline}
+  .idline .t{font-weight:600;font-size:17px}
+
+  /* ---------- agent lanes ---------- */
+  .lane{display:grid;grid-template-columns:190px 1fr 78px;gap:14px;align-items:center;padding:7px 0}
+  .lane .nm{font-weight:500;font-size:14px}
+  .lane .nm span{display:block;font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--plex);letter-spacing:.06em;text-transform:uppercase}
+  .track{position:relative;height:12px;background:#F1F3F5;border:1px solid var(--rule)}
+  .bar{position:absolute;top:0;bottom:0;background:var(--plex);opacity:.85;width:0;transition:width .9s cubic-bezier(.2,.7,.3,1)}
+  .bar.orch{background:var(--ink)}
+  .dur{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--muted);text-align:right}
+  @media(max-width:700px){.lane{grid-template-columns:1fr 60px;}.track{grid-column:1/-1;order:3}}
+
+  /* ---------- findings ---------- */
+  .find{
+    display:grid;grid-template-columns:78px 1fr auto;gap:16px;align-items:start;
+    padding:13px 0;border-top:1px solid var(--rule);cursor:default;
+  }
+  .find:first-of-type{border-top:0}
+  .sev{
+    font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:600;letter-spacing:.08em;
+    text-transform:uppercase;padding:3px 0;text-align:center;border:1px solid;
+  }
+  .sev.critical{color:var(--block);border-color:var(--block);background:var(--block-wash)}
+  .sev.high{color:var(--block);border-color:var(--block)}
+  .sev.medium{color:var(--caution);border-color:var(--caution)}
+  .sev.low{color:var(--muted);border-color:var(--rule-strong)}
+  .find .ttl{font-weight:500}
+  .find .loc{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--muted);margin-top:2px}
+  .by{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+      color:var(--plex);background:var(--plex-wash);padding:3px 7px;white-space:nowrap}
+
+  /* ---------- the thesis: observed vs concluded ---------- */
+  .split{display:grid;grid-template-columns:1fr 1px 1fr;gap:0;border:1px solid var(--rule-strong)}
+  .half{padding:16px 18px}
+  .half.obs{background:#FAFBFC}
+  .gutter{background:var(--rule-strong)}
+  .half .lbl{font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:600;letter-spacing:.14em;
+             text-transform:uppercase;margin-bottom:9px}
+  .half.obs .lbl{color:var(--ink)}
+  .half.inf .lbl{color:var(--plex)}
+  .half p{margin:0;font-size:14px}
+  @media(max-width:760px){.split{grid-template-columns:1fr}.gutter{height:1px}}
+
+  .diff{background:#F6F8F9;border:1px solid var(--rule);padding:12px 14px;margin:12px 0 0;
+        font-family:"IBM Plex Mono",monospace;font-size:12.5px;line-height:1.65;overflow-x:auto;white-space:pre}
+  .diff .del{background:#FBEDEC;color:#8C1D18;display:block}
+  .diff .add{background:#E9F2EC;color:#14512F;display:block}
+  .diff .ctx{color:var(--muted);display:block}
+
+  .fix{border-left:3px solid var(--clear);background:#F2F8F4;padding:12px 16px;margin-top:14px;font-size:14px}
+  .fix .lbl{font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:600;letter-spacing:.14em;
+            text-transform:uppercase;color:var(--clear);display:block;margin-bottom:5px}
+
+  /* ---------- blast radius ---------- */
+  .graph{width:100%;height:auto}
+  .legend{display:flex;gap:20px;flex-wrap:wrap;margin-top:12px;font-size:12.5px;color:var(--muted)}
+  .legend b{font-weight:500;color:var(--ink)}
+
+  .simchip{
+    display:inline-flex;align-items:center;gap:7px;margin-bottom:14px;
+    font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--caution);border:1px dashed var(--caution);padding:5px 10px;background:#FCF8EF;
+  }
+  .note{max-width:1060px;margin:22px auto 0;font-size:13px;color:var(--muted)}
+  @media(prefers-reduced-motion:reduce){.bar{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="simchip">Demo mode — deterministic fixture data</div>
+
+  <!-- SIGNATURE: triage tag -->
+  <div class="tag">
+    <div class="stamp" id="stamp">BLOCK</div>
+    <div>
+      <div class="eyebrow" style="margin-bottom:6px">Orchestrator verdict · IBM BOB 2.0</div>
+      <div class="rationale" id="rationale"></div>
+    </div>
+    <div class="conf">
+      <div class="eyebrow">Confidence</div>
+      <div class="n" id="conf"></div>
+      <div class="mono" style="font-size:11px;color:var(--muted)">not evidence</div>
+    </div>
+  </div>
+
+  <div class="chart">
+    <div class="sec">
+      <div class="idline">
+        <span class="t" id="prtitle"></span>
+        <span class="mono" style="font-size:13px;color:var(--muted)" id="prmeta"></span>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h2>Specialists — parallel investigation</h2>
+      <div id="lanes"></div>
+    </div>
+
+    <div class="sec">
+      <h2>Findings — 8 total, highest severity first</h2>
+      <div id="findings"></div>
+    </div>
+
+    <div class="sec">
+      <h2>Finding detail — TS-01</h2>
+      <div style="font-weight:600;font-size:16px;margin-bottom:4px" id="fdTitle"></div>
+      <div class="mono" style="font-size:13px;color:var(--muted);margin-bottom:16px" id="fdLoc"></div>
+
+      <div class="split">
+        <div class="half obs">
+          <div class="lbl">Observed</div>
+          <p id="fdEvidence"></p>
+        </div>
+        <div class="gutter"></div>
+        <div class="half inf">
+          <div class="lbl">Concluded</div>
+          <p id="fdInference"></p>
+        </div>
+      </div>
+
+      <div class="diff"><span class="ctx">@@ -39,7 +39,7 @@ export function canAdminister(user: User): boolean {</span><span class="ctx">   if (!user) return false;</span><span class="ctx">   if (user.suspended) return false;</span><span class="ctx"> </span><span class="del">-  return user.role === 'admin' &amp;&amp; user.verified;</span><span class="add">+  return user.role === 'admin';</span><span class="ctx"> }</span></div>
+
+      <div class="fix"><span class="lbl">Remediation</span><span id="fdFix"></span></div>
+    </div>
+
+    <div class="sec">
+      <h2>Blast radius — Graphify</h2>
+      <svg class="graph" viewBox="0 0 860 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Dependency graph showing four files affected by the change to auth.ts">
+        <line x1="176" y1="150" x2="470" y2="62"  stroke="#AEB8C0" stroke-width="1.5"/>
+        <line x1="176" y1="150" x2="470" y2="150" stroke="#AEB8C0" stroke-width="1.5"/>
+        <line x1="176" y1="150" x2="470" y2="238" stroke="#AEB8C0" stroke-width="1.5"/>
+        <line x1="686" y1="150" x2="700" y2="238" stroke="#AEB8C0" stroke-width="1.5" stroke-dasharray="3 3"/>
+
+        <rect x="20" y="126" width="156" height="48" fill="#FBEDEC" stroke="#B3261E" stroke-width="2"/>
+        <text x="98" y="147" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="600" fill="#B3261E">auth.ts</text>
+        <text x="98" y="163" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="#8C1D18">changed · line 42</text>
+
+        <rect x="470" y="38" width="216" height="48" fill="#FBEDEC" stroke="#B3261E" stroke-width="2" stroke-dasharray="5 3"/>
+        <text x="578" y="59" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="600" fill="#B3261E">billing/refund.ts</text>
+        <text x="578" y="75" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="#8C1D18">no coverage · moves money</text>
+
+        <rect x="470" y="126" width="216" height="48" fill="#FFFFFF" stroke="#AEB8C0"/>
+        <text x="578" y="147" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" fill="#14181C">session.ts</text>
+        <text x="578" y="163" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="#68757F">step-up flag</text>
+
+        <rect x="470" y="214" width="216" height="48" fill="#FFFFFF" stroke="#AEB8C0"/>
+        <text x="578" y="235" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" fill="#14181C">admin/users/route.ts</text>
+        <text x="578" y="251" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="#68757F">tested</text>
+
+        <rect x="700" y="214" width="140" height="48" fill="#FFFFFF" stroke="#D2D8DD" stroke-dasharray="3 3"/>
+        <text x="770" y="242" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="#68757F">admin/layout.tsx</text>
+
+        <text x="20" y="292" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="#68757F">4 files reached · 1 trust boundary without coverage · graph confidence 89%</text>
+      </svg>
+      <div class="legend">
+        <span><b>Solid red</b> — changed</span>
+        <span><b>Dashed red</b> — reached, no tests</span>
+        <span><b>Grey</b> — reached, covered</span>
+      </div>
+    </div>
+  </div>
+
+  <p class="note">Visual reference only — static HTML rendered from <span class="mono">src/fixtures/demo-pr.json</span>. Hand this to BOB as the design spec for the React build.</p>
+</div>
+
+<script id="fixture" type="application/json">{
+  "jobId": "job_demo_0001",
+  "decision": "BLOCK",
+  "confidence": 0.91,
+  "rationale": "An unverified account holding the admin role can now reach refund issuance, a money-moving path with no test coverage. Test & Security reproduced the path; Code Analyst confirmed the removed condition is the only gate. The documentation gap is real but secondary.",
+  "drivingFindings": ["TS-01", "CA-01", "TS-02"],
+  "disagreements": [
+    "Code Analyst rated the removed condition 'high' on the basis of the diff alone. Test & Security rated it 'critical' after tracing it to refund issuance. Weighted toward Test & Security: reachability was established from the dependency graph, not assumed."
+  ],
+  "context": {
+    "id": "pr_4821",
+    "number": 4821,
+    "title": "fix: simplify permission check in auth helper",
+    "author": "d-nakamura",
+    "branch": "fix/simplify-admin-check",
+    "baseBranch": "main",
+    "repo": "acme/ledger-api",
+    "description": "The double condition was redundant since role assignment already implies verification. Cleaning it up.",
+    "createdAt": "2026-08-29T14:12:00Z",
+    "filesChanged": [
+      {
+        "path": "src/lib/auth.ts",
+        "additions": 1,
+        "deletions": 1,
+        "diff": "@@ -39,7 +39,7 @@ export function canAdminister(user: User): boolean {\n   if (!user) return false;\n   if (user.suspended) return false;\n \n-  return user.role === 'admin' && user.verified;\n+  return user.role === 'admin';\n }"
+      },
+      {
+        "path": "src/lib/auth.test.ts",
+        "additions": 0,
+        "deletions": 12,
+        "diff": "@@ -14,18 +14,6 @@ describe('canAdminister', () => {\n     expect(canAdminister(suspendedAdmin)).toBe(false);\n   });\n \n-  it('rejects an admin who has not completed verification', () => {\n-    const unverified = { role: 'admin', verified: false, suspended: false };\n-    expect(canAdminister(unverified)).toBe(false);\n-  });\n-\n-  it('accepts a verified admin', () => {\n-    const verified = { role: 'admin', verified: true, suspended: false };\n-    expect(canAdminister(verified)).toBe(true);\n-  });\n-\n });"
+      }
+    ]
+  },
+  "reports": [
+    {
+      "agent": "code-analyst",
+      "displayName": "Code Analyst",
+      "mode": "Code",
+      "status": "complete",
+      "startedAtMs": 0,
+      "durationMs": 3120,
+      "summary": "The change removes the only verification gate on administrative access. Three call sites inherit the relaxed behavior. The PR description characterizes the removed condition as redundant; nothing in the diff establishes that.",
+      "findings": [
+        {
+          "id": "CA-01",
+          "severity": "high",
+          "title": "Verification requirement removed from the sole admin gate",
+          "file": "src/lib/auth.ts",
+          "line": 42,
+          "agent": "code-analyst",
+          "evidence": "Line 42 changed from `return user.role === 'admin' && user.verified;` to `return user.role === 'admin';`. No compensating check was added elsewhere in the diff.",
+          "inference": "canAdminister() now returns true for accounts holding the admin role that have not completed verification. Since this function is the only gate used by administrative call sites, verification is no longer enforced anywhere on that path.",
+          "remediation": "Restore the `&& user.verified` condition. If the intent was to allow provisional admins, add an explicit `allowUnverified` parameter so each call site opts in deliberately.",
+          "confidence": 0.96,
+          "reaches": ["src/api/billing/refund.ts", "src/app/admin/users/route.ts", "src/lib/session.ts"]
+        },
+        {
+          "id": "CA-02",
+          "severity": "medium",
+          "title": "PR description asserts redundancy that the code does not support",
+          "file": "src/lib/auth.ts",
+          "line": 42,
+          "agent": "code-analyst",
+          "evidence": "The PR description states that role assignment already implies verification. `src/lib/roles.ts` assigns `role` in `grantRole()` at line 28 without reading or setting `verified`.",
+          "inference": "The stated premise for the change is not upheld by the role assignment code. Role and verification are set independently, so an admin role can exist on an unverified account.",
+          "remediation": "Either enforce verification at role assignment time in grantRole(), or keep the check in canAdminister(). Do not rely on the invariant holding implicitly.",
+          "confidence": 0.88,
+          "reaches": ["src/lib/roles.ts"]
+        },
+        {
+          "id": "CA-03",
+          "severity": "medium",
+          "title": "Two regression tests deleted alongside the behavior change",
+          "file": "src/lib/auth.test.ts",
+          "line": 17,
+          "agent": "code-analyst",
+          "evidence": "The diff removes `it('rejects an admin who has not completed verification')` and `it('accepts a verified admin')` from auth.test.ts. No replacement tests were added.",
+          "inference": "The tests that would have failed against this change were removed in the same commit. The suite now passes for a reason unrelated to correctness.",
+          "remediation": "Restore both tests. If the behavior change is intended, the first test should be rewritten to assert the new contract explicitly rather than deleted.",
+          "confidence": 0.99,
+          "reaches": []
+        }
+      ]
+    },
+    {
+      "agent": "test-security",
+      "displayName": "Test & Security",
+      "mode": "Advanced",
+      "status": "complete",
+      "startedAtMs": 0,
+      "durationMs": 4870,
+      "summary": "The relaxed check is reachable from refund issuance, which moves money and has no test coverage. Severity is driven by reachability, not by the size of the diff.",
+      "findings": [
+        {
+          "id": "TS-01",
+          "severity": "critical",
+          "title": "Unverified admin can issue refunds without a second gate",
+          "file": "src/api/billing/refund.ts",
+          "line": 88,
+          "agent": "test-security",
+          "evidence": "refund.ts:88 calls `if (!canAdminister(session.user)) return forbidden();` and then reaches `stripe.refunds.create()` at line 104. The dependency graph shows no other authorization check between those two lines.",
+          "inference": "After this change, an account that holds the admin role but has never completed verification can issue arbitrary refunds. Account takeover paths that grant a role without completing verification now escalate directly to fund movement.",
+          "remediation": "Restore the verification condition. Independently, add an explicit `requireVerified(session.user)` call in refund.ts before line 104, so that money-moving endpoints do not depend on a single shared helper.",
+          "confidence": 0.93,
+          "reaches": ["src/api/billing/refund.ts"]
+        },
+        {
+          "id": "TS-02",
+          "severity": "high",
+          "title": "No remaining test coverage on the changed function",
+          "file": "src/lib/auth.ts",
+          "line": 39,
+          "agent": "test-security",
+          "evidence": "Coverage data reports 0% line coverage for canAdminister() after this PR. The two tests that exercised it were deleted in the same diff. refund.ts has no test file at all.",
+          "inference": "Nothing in CI would have caught this change, and nothing would catch a future regression on the same path. The absence of a failing test here is not evidence of correctness.",
+          "remediation": "Restore the deleted tests and add one integration test asserting that an unverified admin receives 403 from the refund endpoint.",
+          "confidence": 0.97,
+          "reaches": ["src/lib/auth.ts", "src/api/billing/refund.ts"]
+        },
+        {
+          "id": "TS-03",
+          "severity": "medium",
+          "title": "Session tokens minted for unverified admins skip the step-up prompt",
+          "file": "src/lib/session.ts",
+          "line": 31,
+          "agent": "test-security",
+          "evidence": "session.ts:31 sets `requiresStepUp: !canAdminister(user)`. With the changed helper, unverified admins evaluate to false.",
+          "inference": "The step-up authentication prompt is suppressed for exactly the population this PR newly admits. The weakened check and the missing second factor compound rather than offset each other.",
+          "remediation": "Decouple the step-up decision from canAdminister(). Base it on `user.verified` directly.",
+          "confidence": 0.84,
+          "reaches": ["src/lib/session.ts"]
+        }
+      ]
+    },
+    {
+      "agent": "docs-compliance",
+      "displayName": "Documentation & Compliance",
+      "mode": "Ask",
+      "status": "complete",
+      "startedAtMs": 0,
+      "durationMs": 2340,
+      "summary": "One documentation file now describes behavior the code no longer has. The stated control is referenced by an internal access-control policy.",
+      "findings": [
+        {
+          "id": "DC-01",
+          "severity": "medium",
+          "title": "Auth documentation still promises a verification requirement",
+          "file": "docs/auth.md",
+          "line": 57,
+          "agent": "docs-compliance",
+          "evidence": "docs/auth.md:57 states that administrative actions require both an admin role and a completed verification flow, and cites canAdminister() as the enforcement point.",
+          "inference": "The documented control no longer exists in code. Anyone reading this file — including an auditor — would conclude a protection is in place that was removed by this PR.",
+          "remediation": "Update docs/auth.md:57 in this PR, or restore the check so the documentation stays accurate. Do not merge with the two out of sync.",
+          "confidence": 0.95,
+          "reaches": ["docs/auth.md"]
+        },
+        {
+          "id": "DC-02",
+          "severity": "low",
+          "title": "Security-relevant change has no changelog entry",
+          "file": "CHANGELOG.md",
+          "line": 1,
+          "agent": "docs-compliance",
+          "evidence": "No entry was added to CHANGELOG.md. Repository convention, per CONTRIBUTING.md:44, requires an entry for any change touching src/lib/auth.ts.",
+          "inference": "A change to an authorization boundary would ship without a record. This is a process gap rather than a defect.",
+          "remediation": "Add a CHANGELOG entry describing the authorization behavior change in plain language.",
+          "confidence": 0.9,
+          "reaches": []
+        }
+      ]
+    }
+  ],
+  "blastRadius": {
+    "changedNode": "src/lib/auth.ts",
+    "confidence": 0.89,
+    "affected": [
+      {
+        "path": "src/api/billing/refund.ts",
+        "reason": "Calls canAdminister() as its only authorization gate before issuing a refund",
+        "hasTests": false,
+        "distance": 1,
+        "isTrustBoundary": true
+      },
+      {
+        "path": "src/lib/session.ts",
+        "reason": "Derives the step-up authentication flag from canAdminister()",
+        "hasTests": true,
+        "distance": 1,
+        "isTrustBoundary": true
+      },
+      {
+        "path": "src/app/admin/users/route.ts",
+        "reason": "Guards user administration endpoints with canAdminister()",
+        "hasTests": true,
+        "distance": 1,
+        "isTrustBoundary": false
+      },
+      {
+        "path": "src/app/admin/layout.tsx",
+        "reason": "Renders the admin shell behind a session flag set in session.ts",
+        "hasTests": false,
+        "distance": 2,
+        "isTrustBoundary": false
+      }
+    ],
+    "edges": [
+      { "from": "src/lib/auth.ts", "to": "src/api/billing/refund.ts" },
+      { "from": "src/lib/auth.ts", "to": "src/lib/session.ts" },
+      { "from": "src/lib/auth.ts", "to": "src/app/admin/users/route.ts" },
+      { "from": "src/lib/session.ts", "to": "src/app/admin/layout.tsx" }
+    ]
+  },
+  "decidedAt": "2026-08-29T14:12:19Z",
+  "simulated": true
+}
+</script>
+<script>
+  const v = JSON.parse(document.getElementById('fixture').textContent);
+
+  document.getElementById('stamp').textContent = v.decision;
+  document.getElementById('rationale').textContent = v.rationale;
+  document.getElementById('conf').textContent = Math.round(v.confidence * 100) + '%';
+  document.getElementById('prtitle').textContent = v.context.title;
+  document.getElementById('prmeta').textContent =
+    v.context.repo + ' #' + v.context.number + ' · ' + v.context.author + ' · +' +
+    v.context.filesChanged.reduce((a,f)=>a+f.additions,0) + ' −' +
+    v.context.filesChanged.reduce((a,f)=>a+f.deletions,0);
+
+  const maxDur = Math.max(...v.reports.map(r => r.durationMs)) * 1.3;
+  const lanes = document.getElementById('lanes');
+  v.reports.forEach(r => {
+    lanes.insertAdjacentHTML('beforeend',
+      `<div class="lane">
+         <div class="nm">${r.displayName}<span>BOB ${r.mode} mode</span></div>
+         <div class="track"><div class="bar" data-w="${(r.durationMs/maxDur*100).toFixed(1)}"></div></div>
+         <div class="dur">${(r.durationMs/1000).toFixed(2)}s</div>
+       </div>`);
+  });
+  lanes.insertAdjacentHTML('beforeend',
+    `<div class="lane">
+       <div class="nm">PR Orchestrator<span>BOB Orchestrator mode</span></div>
+       <div class="track"><div class="bar orch" data-w="20" data-off="${(4870/maxDur*100).toFixed(1)}"></div></div>
+       <div class="dur">1.33s</div>
+     </div>`);
+
+  requestAnimationFrame(() => setTimeout(() => {
+    document.querySelectorAll('.bar').forEach(b => {
+      if (b.dataset.off) b.style.left = b.dataset.off + '%';
+      b.style.width = b.dataset.w + '%';
+    });
+  }, 120));
+
+  const order = { critical:0, high:1, medium:2, low:3 };
+  const all = v.reports.flatMap(r => r.findings).sort((a,b) => order[a.severity]-order[b.severity]);
+  const box = document.getElementById('findings');
+  all.forEach(f => {
+    const r = v.reports.find(x => x.agent === f.agent);
+    box.insertAdjacentHTML('beforeend',
+      `<div class="find">
+         <div class="sev ${f.severity}">${f.severity}</div>
+         <div>
+           <div class="ttl">${f.title}</div>
+           <div class="loc">${f.file}:${f.line}</div>
+         </div>
+         <div class="by">${r.displayName} · ${r.mode}</div>
+       </div>`);
+  });
+
+  const fd = all.find(f => f.id === 'TS-01');
+  document.getElementById('fdTitle').textContent = fd.title;
+  document.getElementById('fdLoc').textContent = fd.file + ':' + fd.line + '  ·  reported by Test & Security  ·  BOB Advanced mode';
+  document.getElementById('fdEvidence').textContent = fd.evidence;
+  document.getElementById('fdInference').textContent = fd.inference;
+  document.getElementById('fdFix').textContent = fd.remediation;
+</script>
+</body>
+</html>
