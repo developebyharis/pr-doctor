@@ -11,10 +11,11 @@
     "lint": "pnpm --filter pr-doctor lint",
     "validate": "pnpm --filter pr-doctor validate",
     "install:web": "pnpm --filter pr-doctor install",
-    "install:python": "cd packages/pr-ingestion && uv sync",
-    "setup": "pnpm install && cd packages/pr-ingestion && uv sync",
-    "api:serve": "cd packages/pr-ingestion && uv run python -m integration.cli serve",
-    "api:ingest": "cd packages/pr-ingestion && uv run python -m integration.cli ingest"
+    "install:api": "pnpm --filter pr-doctor-api install",
+    "setup": "pnpm install && pnpm --filter pr-doctor-api install",
+    "api:ts:dev": "pnpm --filter pr-doctor-api dev",
+    "api:ts:build": "pnpm --filter pr-doctor-api build",
+    "api:ts:serve": "pnpm --filter pr-doctor-api serve"
   },
   "devEngines": {
     "packageManager": {

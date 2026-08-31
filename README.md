@@ -10,9 +10,9 @@ Four BOB specialists investigate a PR in parallel and return a **MERGE / NEEDS_W
 ```
 Pointer/
 ├── apps/
-│   └── web/                  # Next.js 15 front-end (PR Doctor UI)
+│   ├── web/                  # Next.js front-end (PR Doctor UI)
+│   └── api/                  # Express + TypeScript ingestion service (port of the old Python service)
 ├── packages/
-│   ├── pr-ingestion/         # Python FastAPI service — fetches PRs from GitHub
 │   └── graphify-out/         # Committed graph snapshot (nodes + edges)
 ├── package.json              # Root — pnpm workspace scripts
 └── pnpm-workspace.yaml       # Declares apps/* as workspaces
@@ -26,8 +26,6 @@ Pointer/
 |---|---|---|
 | Node.js | ≥ 20 | https://nodejs.org |
 | pnpm | ≥ 11 | `npm i -g pnpm` |
-| Python | ≥ 3.13 | https://python.org |
-| uv | latest | `pip install uv` or https://github.com/astral-sh/uv |
 
 ---
 
@@ -49,35 +47,30 @@ The landing page shows a pre-loaded BLOCK verdict.
 
 ## Full setup (live GitHub ingestion)
 
-### 1. Configure the Python ingestion service
+### 1. Configure the apps/api service
 
 ```bash
-cp packages/pr-ingestion/env.example packages/pr-ingestion/.env
-# Edit .env — set GITHUB_TOKEN and GITHUB_REPO
+pnpm run install:api
+cp apps/api/.env.example apps/api/.env
+# Edit apps/api/.env — set GITHUB_TOKEN and GITHUB_REPO
 ```
 
-### 2. Install Python dependencies
+### 2. Start the ingestion service
 
 ```bash
-pnpm run install:python
-# Equivalent to: cd packages/pr-ingestion && uv sync
+# Start the Express service (http://localhost:8000/health)
+pnpm run api:ts:serve
 ```
 
-### 3. Ingest a PR
-
-```bash
-# Ingest a specific PR number
-pnpm run api:ingest -- 42
-
-# Or start the REST API server (http://localhost:8000/docs)
-pnpm run api:serve
-```
-
-### 4. Start the web app
+### 3. Start the web app
 
 ```bash
 pnpm dev
 ```
+
+Open http://localhost:3000/connect, enter a GitHub token and `owner/repo`, and
+list open PRs. The web app proxies each request through `apps/api`, which
+forwards it to the GitHub API with live pagination (10 per page + Load More).
 
 ---
 
@@ -90,10 +83,11 @@ pnpm dev
 | `pnpm start` | Start the production Next.js server |
 | `pnpm lint` | Run ESLint on the web app |
 | `pnpm validate` | Validate the fixture file against internal consistency rules |
-| `pnpm run setup` | Install both JS (pnpm) and Python (uv) dependencies in one step |
-| `pnpm run install:python` | Install Python dependencies via `uv sync` |
-| `pnpm run api:serve` | Start the FastAPI ingestion server on port 8000 |
-| `pnpm run api:ingest -- <PR#>` | Ingest a single PR from GitHub |
+| `pnpm run setup` | Install both workspace (pnpm) dependencies in one step |
+| `pnpm run install:api` | Install the Express `apps/api` dependencies |
+| `pnpm run api:ts:dev` | Run `apps/api` with `tsx watch` |
+| `pnpm run api:ts:build` | Compile `apps/api` to `dist/` |
+| `pnpm run api:ts:serve` | Run the compiled `apps/api` server on port 8000 |
 
 ---
 
@@ -101,30 +95,38 @@ pnpm dev
 
 ```
 Browser
-  │
+  │  (encrypted token in sessionStorage)
   ▼
 apps/web (Next.js)
   ├── /api/analyze        POST → creates a job
   ├── /api/job/[id]       GET  → live agent progress (polled every 800ms)
   ├── /api/verdict/[id]   GET  → FinalVerdict (calls IBM BOB or serves fixture)
-  └── /api/graphify       GET  → subgraph context for changed files
+  ├── /api/graphify       GET  → subgraph context for changed files
+  └── /api/github/*       proxies PR list/detail to apps/api
         │
         ├── lib/bob-adapter.ts   — only file that calls `bob run`
         └── lib/graphify.ts      — reads packages/graphify-out/graph.json
 
-packages/pr-ingestion (FastAPI + TinyDB)
-  ├── POST /ingest/{pr}   Fetch PR from GitHub, analyse, store
-  ├── GET  /prs           List stored PRs
-  └── GET  /prs/{pr}      Get a single stored PR
+apps/api (Express + TypeScript)
+  ├── GET  /github/prs            Live paginated list of open PRs (proxies client token to GitHub)
+  ├── GET  /github/prs/{n}        Live PR detail + changed files
+  ├── POST /ingest/{pr}           Fetch PR from GitHub, analyse, store (local JSON)
+  ├── GET  /prs                   List stored PRs
+  └── GET  /prs/{pr}              Get a single stored PR
 ```
 
 ---
 
-## Environment variables (web app)
+## Environment variables
 
-| Variable | Default | Description |
-|---|---|---|
-| `DEMO_MODE` | *(unset)* | Set to `fixture` to skip live BOB calls and serve the demo fixture |
+| App | Variable | Default | Description |
+|---|---|---|---|
+| web | `DEMO_MODE` | *(unset)* | Set to `fixture` to skip live BOB calls and serve the demo fixture |
+| web | `PR_INGEST_URL` | `http://localhost:8000` | Base URL of the `apps/api` service (server-side) |
+| api | `GITHUB_TOKEN` | *(required)* | Token used by `apps/api/*/ingest` endpoints |
+| api | `GITHUB_REPO` | *(required)* | `owner/repo` used by `apps/api/*/ingest` endpoints |
+| api | `API_PORT` | `8000` | HTTP port for `apps/api` |
+| api | `DB_PATH` | *(file next to store)* | Path to the local JSON PR store |
 
 ---
 

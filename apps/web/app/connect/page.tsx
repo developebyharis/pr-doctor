@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { saveRepo, saveToken } from '@/lib/token-store';
 
 const C = {
   bg: '#E9ECEF',
@@ -19,6 +20,28 @@ const C = {
 
 const mono: React.CSSProperties = { fontFamily: '"IBM Plex Mono", monospace' };
 
+const inputStyle: React.CSSProperties = {
+  ...mono,
+  fontSize: 13,
+  padding: '10px 12px',
+  border: `1px solid ${C.ruleStrong}`,
+  background: C.chart,
+  color: C.ink,
+  width: '100%',
+  outline: 'none',
+};
+
+const labelStyle: React.CSSProperties = {
+  ...mono,
+  fontSize: 11,
+  fontWeight: 600,
+  letterSpacing: '0.08em',
+  textTransform: 'uppercase' as const,
+  color: C.muted,
+  marginBottom: 6,
+  display: 'block',
+};
+
 function Eyebrow({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
     <div style={{ ...mono, fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: C.muted, ...style }}>
@@ -29,25 +52,40 @@ function Eyebrow({ children, style }: { children: React.ReactNode; style?: React
 
 export default function ConnectPage() {
   const router = useRouter();
+  const [token, setToken] = useState('');
+  const [repoInput, setRepoInput] = useState('');
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState('');
 
-  // The pr-ingestion service holds the GitHub credentials. Connecting here
-  // triggers a bulk ingest of the service's configured open PRs, then lists them.
   async function handleConnect(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+
+    const trimmed = repoInput.trim();
+    const parts = trimmed.split('/');
+    if (parts.length !== 2 || !parts[0] || !parts[1]) {
+      setError('Repository must be in owner/repo format (e.g. facebook/react)');
+      return;
+    }
+
+    if (!token.trim()) {
+      setError('GitHub token is required');
+      return;
+    }
+
     setConnecting(true);
     try {
-      const res = await fetch('/api/github/prs', { method: 'POST' });
+      const [owner, repo] = parts;
+      const res = await fetch(
+        `/api/github/direct-prs?token=${encodeURIComponent(token.trim())}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}&page=1&per_page=1`,
+      );
       if (!res.ok) {
         const json = await res.json().catch(() => ({}));
-        const detail = json?.detail ?? json?.error ?? `Error ${res.status}`;
-        throw new Error(detail);
+        throw new Error(json?.error ?? `GitHub API error ${res.status}`);
       }
-      const prs = await res.json();
-      const repo = (Array.isArray(prs) && prs[0]?.repo) || 'configured repo';
-      sessionStorage.setItem('gh:repo', repo);
+
+      await saveToken(token.trim());
+      saveRepo(trimmed);
       router.push('/pulls');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Connection failed');
@@ -65,7 +103,7 @@ export default function ConnectPage() {
           <Link href="/" style={{ ...mono, fontSize: 13, fontWeight: 600, letterSpacing: '0.04em', color: C.plex, textDecoration: 'none' }}>
             PR Doctor
           </Link>
-          <Eyebrow>Connect the ingestion service</Eyebrow>
+          <Eyebrow>Connect to GitHub</Eyebrow>
         </div>
       </header>
 
@@ -76,26 +114,35 @@ export default function ConnectPage() {
           Connect your GitHub repository
         </h1>
         <p style={{ fontSize: 14, color: C.muted, margin: '0 0 32px', lineHeight: 1.6 }}>
-          PR Doctor sources pull requests through the <strong style={{ color: C.ink }}>pr-ingestion</strong> service
-          (FastAPI). That service is configured server-side with a GitHub token and repo — start it once with{' '}
-          <code style={{ ...mono, fontSize: 12, background: '#F6F8F9', border: `1px solid ${C.rule}`, padding: '1px 5px' }}>pnpm run api:serve</code>,
-          then connect here to ingest its open PRs.
+          Enter a <strong style={{ color: C.ink }}>GitHub personal access token</strong> and the{' '}
+          <strong style={{ color: C.ink }}>owner/repo</strong> to fetch open pull requests directly from the GitHub API.
         </p>
 
         <form onSubmit={handleConnect}>
           <div style={{ background: C.chart, border: `1px solid ${C.ruleStrong}` }}>
 
-            {/* Summary row */}
             <div style={{ padding: '20px 24px', borderBottom: `1px solid ${C.rule}` }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                <span style={{ width: 9, height: 9, borderRadius: '50%', background: C.clear, display: 'inline-block' }} />
-                <span style={{ ...mono, fontSize: 12, color: C.ink }}>Prerequisite — service must be running</span>
+              <div style={{ marginBottom: 16 }}>
+                <label style={labelStyle}>GitHub Token</label>
+                <input
+                  type="password"
+                  value={token}
+                  onChange={(e) => setToken(e.target.value)}
+                  placeholder="ghp_xxxxxxxxxxxx"
+                  style={inputStyle}
+                  autoComplete="off"
+                />
               </div>
-              <ol style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.9, color: C.ink }}>
-                <li>Set <code style={{ ...mono, fontSize: 12 }}>GITHUB_TOKEN</code> and <code style={{ ...mono, fontSize: 12 }}>GITHUB_REPO</code> in <code style={{ ...mono, fontSize: 12 }}>packages/pr-ingestion/.env</code></li>
-                <li>Run <code style={{ ...mono, fontSize: 12 }}>pnpm run install:python</code> once</li>
-                <li>Run <code style={{ ...mono, fontSize: 12 }}>pnpm run api:serve</code> (FastAPI on http://localhost:8000)</li>
-              </ol>
+              <div>
+                <label style={labelStyle}>Repository (owner/repo)</label>
+                <input
+                  type="text"
+                  value={repoInput}
+                  onChange={(e) => setRepoInput(e.target.value)}
+                  placeholder="facebook/react"
+                  style={inputStyle}
+                />
+              </div>
             </div>
 
             {error && (
@@ -104,7 +151,6 @@ export default function ConnectPage() {
               </div>
             )}
 
-            {/* Submit */}
             <div style={{ padding: '16px 24px', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
               <Link href="/" style={{ ...mono, fontSize: 12, color: C.muted, textDecoration: 'none', padding: '10px 0', letterSpacing: '0.04em' }}>
                 Cancel

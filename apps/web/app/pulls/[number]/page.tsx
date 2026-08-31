@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import type { GithubPRDetail, GithubFileDiff } from '@/app/api/github/prs/[number]/route';
+import { readRepo, readToken } from '@/lib/token-store';
 
 const C = {
   bg: '#E9ECEF',
@@ -148,20 +149,35 @@ export default function PRDetailPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const [repo, setRepo] = useState('');
+  const [repo] = useState(() => {
+    try { return searchParams.get('repo') ?? readRepo() ?? ''; } catch { return ''; }
+  });
+  const [token, setToken] = useState<string | null>(null);
   const [pr, setPr] = useState<GithubPRDetail | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
 
-  const fetchDetail = useCallback(async (r: string) => {
+  useEffect(() => {
+    // Decrypt the token from sessionStorage (async) once on mount.
+    const t = setTimeout(() => {
+      readToken()
+        .then((tok) => setToken(tok))
+        .catch(() => setToken(''));
+    }, 0);
+    return () => clearTimeout(t);
+  }, []);
+
+  const fetchDetail = useCallback(async (tok: string, r: string) => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`/api/github/prs/${number}?repo=${encodeURIComponent(r)}`);
+      const res = await fetch(
+        `/api/github/prs/${number}?token=${encodeURIComponent(tok)}&repo=${encodeURIComponent(r)}`,
+      );
       if (!res.ok) {
         const json = await res.json().catch(() => ({}));
-        throw new Error(json?.detail ?? json?.error ?? `pr-ingestion ${res.status}`);
+        throw new Error(json?.error ?? json?.detail ?? `GitHub API ${res.status}`);
       }
       setPr(await res.json());
     } catch (err) {
@@ -172,16 +188,11 @@ export default function PRDetailPage() {
   }, [number]);
 
   useEffect(() => {
-    try {
-      // Repo comes from the connect flow (session) or a deep link (?repo=).
-      const r = searchParams.get('repo') ?? sessionStorage.getItem('gh:repo') ?? '';
-      if (!r) { router.push('/connect'); return; }
-      setRepo(r);
-      fetchDetail(r);
-    } catch {
-      router.push('/connect');
-    }
-  }, [router, searchParams, fetchDetail]);
+    if (token === null) return; // still decrypting
+    if (!repo || !token) { router.push('/connect'); return; }
+    const t = setTimeout(() => { fetchDetail(token, repo); }, 0);
+    return () => clearTimeout(t);
+  }, [router, repo, token, fetchDetail]);
   // Store context in sessionStorage so /investigation can read it
   function handleAnalyze() {
   if (!pr) return;

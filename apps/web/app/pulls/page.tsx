@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import type { GithubPRItem } from '@/app/api/github/prs/route';
+import type { GithubPRItem } from '@/app/api/github/direct-prs/route';
+import { clearToken, readRepo, readToken } from '@/lib/token-store';
 
 const C = {
   bg: '#E9ECEF',
@@ -20,6 +21,8 @@ const C = {
 };
 
 const mono: React.CSSProperties = { fontFamily: '"IBM Plex Mono", monospace' };
+
+const PER_PAGE = 10;
 
 function Eyebrow({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
@@ -42,10 +45,9 @@ function relativeTime(iso: string): string {
 
 function PRRow({ pr, repo }: { pr: GithubPRItem; repo: string }) {
   const isDraft = pr.draft;
-  const urlSafePr = pr.number;
   return (
     <Link
-      href={`/pulls/${urlSafePr}?repo=${encodeURIComponent(repo)}`}
+      href={`/pulls/${pr.number}?repo=${encodeURIComponent(repo)}`}
       style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
     >
       <div style={{
@@ -110,72 +112,72 @@ function PRRow({ pr, repo }: { pr: GithubPRItem; repo: string }) {
 
 export default function PullsPage() {
   const router = useRouter();
-  const [repo, setRepo] = useState<string>('');
-  const [prs, setPrs] = useState<GithubPRItem[] | null>(null);
-  const [error, setError] = useState<string>('');
+  const [prs, setPrs] = useState<GithubPRItem[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'open' | 'all'>('open');
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  const fetchPRs = useCallback(async (r: string) => {
-    setLoading(true);
+  const [token, setToken] = useState<string | null>(null);
+  const [repo] = useState<string>(() => {
+    try { return readRepo(); } catch { return ''; }
+  });
+
+  const displayRepo = repo;
+
+  useEffect(() => {
+    // Decrypt the token from sessionStorage (async) once on mount.
+    const t = setTimeout(() => {
+      readToken()
+        .then((tok) => setToken(tok))
+        .catch(() => setToken(''));
+    }, 0);
+    return () => clearTimeout(t);
+  }, []);
+
+  const fetchPage = useCallback(async (tok: string, r: string, p: number, append: boolean) => {
+    if (append) setLoadingMore(true);
+    else setLoading(true);
     setError('');
     try {
-      // The server proxies to the pr-ingestion service — no token needed here.
-      const res = await fetch(`/api/github/prs?repo=${encodeURIComponent(r)}`);
+      const [owner, repoName] = r.split('/');
+      const res = await fetch(
+        `/api/github/direct-prs?token=${encodeURIComponent(tok)}&owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repoName)}&page=${p}&per_page=${PER_PAGE}`,
+      );
       if (!res.ok) {
         const json = await res.json().catch(() => ({}));
-        if (json?.needsToken === undefined && (res.status === 503 || res.status === 502)) {
-          router.push('/connect');
-          return;
-        }
-        throw new Error(json?.error ?? json?.detail ?? `pr-ingestion ${res.status}`);
+        throw new Error(json?.error ?? `GitHub API error ${res.status}`);
       }
       const data: GithubPRItem[] = await res.json();
-      setPrs(data);
+      setPrs(prev => append ? [...prev, ...data] : data);
+      setHasMore(data.length === PER_PAGE);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch PRs');
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
-  }, [router]);
-
-  // Live refresh — asks pr-ingestion to re-fetch open PRs from GitHub, then lists.
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const res = await fetch('/api/github/prs', { method: 'POST' });
-      if (!res.ok) {
-        const json = await res.json().catch(() => ({}));
-        if (res.status === 503 || res.status === 502) { router.push('/connect'); return; }
-        throw new Error(json?.error ?? json?.detail ?? `pr-ingestion ${res.status}`);
-      }
-      const data: GithubPRItem[] = await res.json();
-      setPrs(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to refresh PRs');
-    } finally {
-      setLoading(false);
-    }
-  }, [router]);
+  }, []);
 
   useEffect(() => {
-    try {
-      const r = sessionStorage.getItem('gh:repo') ?? '';
-      if (!r) { router.push('/connect'); return; }
-      setRepo(r);
-      fetchPRs(r);
-    } catch {
-      router.push('/connect');
-    }
-  }, [router, fetchPRs]);
+    if (token === null) return; // still decrypting
+    if (!token || !repo) { router.push('/connect'); return; }
+    const t = setTimeout(() => { fetchPage(token, repo, 1, false); }, 0);
+    return () => clearTimeout(t);
+  }, [router, token, repo, fetchPage]);
 
   function disconnect() {
-    sessionStorage.removeItem('gh:repo');
+    clearToken();
     router.push('/connect');
   }
 
-  const visiblePRs = prs ?? [];
+  function loadMore() {
+    if (!token || !repo) return;
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchPage(token, repo, nextPage, true);
+  }
 
   return (
     <div style={{ background: C.bg, minHeight: '100vh', fontFamily: '"IBM Plex Sans", system-ui, sans-serif', color: C.ink }}>
@@ -188,14 +190,14 @@ export default function PullsPage() {
               PR Doctor
             </Link>
             <span style={{ color: C.ruleStrong }}>›</span>
-            <span style={{ ...mono, fontSize: 12, color: C.muted }}>{repo}</span>
+            <span style={{ ...mono, fontSize: 12, color: C.muted }}>{displayRepo}</span>
           </div>
           <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
             <button
-              onClick={refresh}
+              onClick={() => { if (token && repo) { setPage(1); fetchPage(token, repo, 1, false); } }}
               style={{ ...mono, fontSize: 11, color: C.plex, background: 'none', border: 'none', cursor: 'pointer', letterSpacing: '0.06em', textTransform: 'uppercase' as const }}
             >
-              ↻ Refresh from GitHub
+              ↻ Refresh
             </button>
             <button
               onClick={disconnect}
@@ -214,30 +216,8 @@ export default function PullsPage() {
           <div>
             <Eyebrow style={{ marginBottom: 6 }}>Open Pull Requests</Eyebrow>
             <h1 style={{ fontFamily: '"IBM Plex Sans Condensed", sans-serif', fontWeight: 700, fontSize: 24, margin: 0, lineHeight: 1.1 }}>
-              {repo}
+              {displayRepo}
             </h1>
-          </div>
-          <div style={{ display: 'flex', gap: 1, border: `1px solid ${C.ruleStrong}` }}>
-            {(['open', 'all'] as const).map(f => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                style={{
-                  ...mono,
-                  fontSize: 11,
-                  fontWeight: 600,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase' as const,
-                  padding: '6px 14px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  background: filter === f ? C.plex : C.chart,
-                  color: filter === f ? '#FFF' : C.muted,
-                }}
-              >
-                {f}
-              </button>
-            ))}
           </div>
         </div>
 
@@ -262,21 +242,45 @@ export default function PullsPage() {
             </div>
           )}
 
-          {!loading && !error && visiblePRs.length === 0 && (
+          {!loading && !error && prs.length === 0 && (
             <div style={{ padding: '40px 24px', textAlign: 'center', ...mono, fontSize: 13, color: C.muted }}>
-              No open pull requests found in <strong>{repo}</strong>.
+              No open pull requests found in <strong>{displayRepo}</strong>.
             </div>
           )}
 
-          {!loading && !error && visiblePRs.map(pr => (
-            <PRRow key={pr.number} pr={pr} repo={repo} />
+          {!loading && !error && prs.map(pr => (
+            <PRRow key={pr.number} pr={pr} repo={displayRepo} />
           ))}
+
+          {/* Load More */}
+          {!loading && !error && hasMore && prs.length > 0 && (
+            <div style={{ padding: '16px 24px', borderTop: `1px solid ${C.rule}`, textAlign: 'center' }}>
+              <button
+                onClick={loadMore}
+                disabled={loadingMore}
+                style={{
+                  ...mono,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase' as const,
+                  padding: '10px 28px',
+                  background: loadingMore ? C.muted : C.plex,
+                  color: '#FFFFFF',
+                  border: 'none',
+                  cursor: loadingMore ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {loadingMore ? 'Loading…' : 'Load More'}
+              </button>
+            </div>
+          )}
 
         </div>
 
-        {!loading && !error && visiblePRs.length > 0 && (
+        {!loading && !error && prs.length > 0 && (
           <div style={{ marginTop: 10, ...mono, fontSize: 12, color: C.muted }}>
-            {visiblePRs.length} open PR{visiblePRs.length !== 1 ? 's' : ''} · Click any row to view details and run analysis
+            Showing {prs.length} PR{prs.length !== 1 ? 's' : ''} · Click any row to view details and run analysis
           </div>
         )}
 

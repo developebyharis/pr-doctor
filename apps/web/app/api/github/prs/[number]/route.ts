@@ -1,19 +1,22 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import {
-  fetchIngestedPr,
-  ingestPr,
-  isIngestionUp,
-  recordToDetail,
+  isApiUp,
+  fetchLivePrDetail,
   type GithubPrDetailShape,
-  type IngestionFileDiff,
 } from '@/lib/ingestion';
 
-export interface GithubFileDiff extends IngestionFileDiff {}
+export interface GithubFileDiff {
+  filename: string;
+  status: string;
+  additions: number;
+  deletions: number;
+  patch: string | null;
+}
 
-export interface GithubPRDetail extends GithubPrDetailShape {}
+export type GithubPRDetail = GithubPrDetailShape;
 
 export async function GET(
-  _request: Request,
+  req: NextRequest,
   { params }: { params: Promise<{ number: string }> },
 ) {
   const { number } = await params;
@@ -22,32 +25,33 @@ export async function GET(
     return NextResponse.json({ error: 'Invalid PR number' }, { status: 400 });
   }
 
-  if (!(await isIngestionUp())) {
+  const token = req.nextUrl.searchParams.get('token');
+  const repo = req.nextUrl.searchParams.get('repo');
+
+  if (!token || !repo || !repo.includes('/')) {
+    return NextResponse.json(
+      { error: 'Missing required parameters: token, repo (owner/repo)' },
+      { status: 400 },
+    );
+  }
+
+  const apiUp = await isApiUp();
+  if (!apiUp) {
     return NextResponse.json(
       {
-        error: 'pr-ingestion service unavailable',
+        error: 'apps/api service unavailable',
         detail:
-          'Start the ingestion service with `pnpm run api:serve` (FastAPI on http://localhost:8000), configured with GITHUB_TOKEN and GITHUB_REPO.',
-        needsToken: false,
+          'Start the ingestion service with `pnpm api:ts:serve` (Express on http://localhost:8000).',
       },
       { status: 503 },
     );
   }
 
   try {
-    let rec;
-    try {
-      rec = await fetchIngestedPr(prNumber);
-    } catch (err) {
-      // Not yet ingested — ask the service to fetch this specific PR, then retry.
-      const message = err instanceof Error ? err.message : '';
-      if (!message.includes('404')) throw err;
-      await ingestPr(prNumber);
-      rec = await fetchIngestedPr(prNumber);
-    }
-    return NextResponse.json(recordToDetail(rec));
+    const detail = await fetchLivePrDetail(token, repo, prNumber);
+    return NextResponse.json(detail);
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Failed to load PR detail';
-    return NextResponse.json({ error: message, detail: message, needsToken: false }, { status: 502 });
+    const message = err instanceof Error ? err.message : 'Failed to fetch PR detail';
+    return NextResponse.json({ error: message, detail: message }, { status: 502 });
   }
 }
