@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { saveRepo, saveToken } from '@/lib/token-store';
+import { hasStoredSession, readRepo, saveRepo, saveToken } from '@/lib/token-store';
 
 const C = {
   bg: '#E9ECEF',
@@ -52,10 +52,20 @@ function Eyebrow({ children, style }: { children: React.ReactNode; style?: React
 
 export default function ConnectPage() {
   const router = useRouter();
+  const [existing] = useState(() => hasStoredSession());
   const [token, setToken] = useState('');
-  const [repoInput, setRepoInput] = useState('');
+  const [repoInput, setRepoInput] = useState(() => {
+    try { return readRepo(); } catch { return ''; }
+  });
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState('');
+
+  // Already connected — skip the form and go straight to the PR list.
+  useEffect(() => {
+    if (existing) {
+      router.push('/pulls');
+    }
+  }, [existing, router]);
 
   async function handleConnect(e: React.FormEvent) {
     e.preventDefault();
@@ -107,6 +117,13 @@ export default function ConnectPage() {
         </div>
       </header>
 
+      {existing ? (
+        <div style={{ maxWidth: 760, margin: '48px auto 0', padding: '0 24px 80px' }}>
+          <div style={{ padding: '24px', background: C.chart, border: `1px solid ${C.ruleStrong}`, ...mono, fontSize: 13, color: C.muted }}>
+            Already connected to <strong style={{ color: C.plex }}>{readRepo() || 'this repository'}</strong> — redirecting to your pull requests…
+          </div>
+        </div>
+      ) : (
       <div style={{ maxWidth: 760, margin: '48px auto 0', padding: '0 24px 80px' }}>
 
         <Eyebrow style={{ marginBottom: 10 }}>Step 1 of 2</Eyebrow>
@@ -177,6 +194,7 @@ export default function ConnectPage() {
         </form>
 
       </div>
+      )}
     </div>
   );
 }

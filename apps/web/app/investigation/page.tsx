@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import type { AgentId, AgentStatus, BlastRadius, FinalVerdict, Finding, PRContext, Severity } from '@/lib/types';
 import { allFindings } from '@/lib/types';
-import type { GraphifyContext } from '@/lib/graphify';
+import type { GraphifyContextResponse } from '@/app/api/graphify/route';
 
 interface JobProgress {
   agent: AgentId;
@@ -128,12 +128,13 @@ const DEMO_GRAPH_COMMUNITIES = [
   { name: 'PR Doctor Agent Subagents', nodes: 6, description: 'Code-Change · Tester · Security · Documentation' },
 ];
 
-function GraphifyPanel() {
-  const [ctx, setCtx] = useState<GraphifyContext | null>(null);
+function GraphifyPanel({ files }: { files: string[] }) {
+  const [ctx, setCtx] = useState<GraphifyContextResponse | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/graphify')
+    const query = files.length > 0 ? `?files=${encodeURIComponent(files.join(','))}` : '';
+    fetch(`/api/graphify${query}`)
       .then(r => r.json())
       .then(data => {
         if (!cancelled) setCtx(data);
@@ -142,7 +143,7 @@ function GraphifyPanel() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [files]);
 
   if (!ctx) return null;
 
@@ -157,6 +158,22 @@ function GraphifyPanel() {
           Built on apps/integration workspace
         </div>
       </div>
+
+      {/* Honest indexed status for the PR being analyzed */}
+      {ctx.indexed === false && (
+        <div style={{ background: '#FCF8EF', border: '1px solid #D2D8DD', borderLeft: '4px solid #8A5A00', padding: '12px 16px', marginBottom: 20 }}>
+          <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#8A5A00', marginBottom: 6 }}>
+            This repo isn&apos;t in the graph snapshot
+          </div>
+          <div style={{ fontSize: 13, lineHeight: 1.6, color: '#14181C' }}>
+            None of this PR&apos;s changed files map to symbols in the committed graph ({ctx.graphStats.totalNodes} nodes ·{' '}
+            {ctx.graphStats.totalEdges} edges). The graph was built on a different workspace. In production, Graphify
+            runs on the target repo before analysis, so every changed file resolves to its call sites. Nothing here is
+            fabricated — the community map and god nodes below are shown to explain the mechanism on the workspace
+            that <em>is</em> indexed.
+          </div>
+        </div>
+      )}
 
       {/* Stats strip */}
       <div style={{ display: 'flex', gap: 32, marginBottom: 20, flexWrap: 'wrap' }}>
@@ -813,7 +830,7 @@ export default function InvestigationPage() {
           )}
 
           {/* Graphify context panel — shown after verdict */}
-          {verdict && <GraphifyPanel />}
+          {verdict && <GraphifyPanel files={verdict.context.filesChanged.map(f => f.path)} />}
         </div>
 
         {/* Back link */}
