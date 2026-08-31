@@ -15,26 +15,26 @@ import type { GraphifyContextResponse } from '@/app/api/graphify/route';
 import type { Network as VisNetwork } from 'vis-network/standalone';
 
 export const graphC = {
-  bg: '#E9ECEF',
+  bg: '#F6F6F5',
   chart: '#FFFFFF',
-  ink: '#14181C',
-  muted: '#68757F',
-  rule: '#D2D8DD',
-  ruleStrong: '#AEB8C0',
-  plex: '#24408E',
-  plexWash: '#EDF0F8',
-  block: '#B3261E',
-  blockWash: '#FBEDEC',
-  clear: '#1F6B45',
-  clearWash: '#E9F2EC',
-  caution: '#8A5A00',
-  cautionWash: '#FCF8EF',
-  ground: '#F6F8FA',
+  ink: '#111113',
+  muted: '#6B7280',
+  rule: '#E7E7E5',
+  ruleStrong: '#D4D4D1',
+  plex: '#4A5568',
+  plexWash: '#F1F3F5',
+  block: '#B4232A',
+  blockWash: '#FBEFEF',
+  clear: '#157A5B',
+  clearWash: '#E9F5F0',
+  caution: '#9A6A00',
+  cautionWash: '#FBF6E7',
+  ground: '#F6F6F5',
 };
 
 const COMMUNITY_COLORS = [
-  '#24408E', '#1F6B45', '#8A5A00', '#B3261E', '#6B3FA0',
-  '#0E7490', '#9A3412', '#4D7C0F', '#9D174D', '#475569',
+  '#4A5568', '#157A5B', '#9A6A00', '#B4232A', '#6B7280',
+  '#0E7490', '#9A3412', '#4D7C0F', '#9D174D', '#101418',
 ];
 
 const mono: React.CSSProperties = { fontFamily: '"IBM Plex Mono", monospace' };

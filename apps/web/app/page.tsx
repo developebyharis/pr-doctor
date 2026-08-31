@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { FinalVerdict } from '@/lib/types';
 import fixtureRaw from '@/fixtures/demo-pr.json';
+import { Shell, SectionHeading } from '@/app/components/ui';
 
 const fixture = fixtureRaw as unknown as FinalVerdict;
 
@@ -61,277 +62,221 @@ const STEPS = [
 const confidencePct = `${Math.round(fixture.confidence * 100)}%`;
 const totalFindings = fixture.reports.reduce((s, r) => s + r.findings.length, 0);
 
+function severityColor(sev: string): string {
+  if (sev === 'critical' || sev === 'high') return 'var(--block)';
+  if (sev === 'medium') return 'var(--caution)';
+  return 'var(--muted)';
+}
+
+function severityWash(sev: string): string {
+  if (sev === 'critical' || sev === 'high') return 'var(--block-wash)';
+  if (sev === 'medium') return 'var(--caution-wash)';
+  return 'var(--plex-wash)';
+}
+
+/* Terminal-style command demo block — the visual anchor of the hero */
+function TerminalCard() {
+  return (
+    <div className="ui-card" style={{ overflow: 'hidden', boxShadow: 'var(--shadow-lg)' }}>
+      {/* Terminal title bar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 18px', borderBottom: '1px solid var(--rule)', background: '#FAFBFC' }}>
+        <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#E2B15C' }} />
+        <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#E5A3A3' }} />
+        <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#A9C7A9' }} />
+        <span className="mono" style={{ fontSize: 11, color: 'var(--faint)', marginLeft: 8 }}>pr-doctor — review</span>
+      </div>
+      {/* Terminal body */}
+      <div className="mono" style={{ padding: '18px 20px', fontSize: 12.5, lineHeight: 1.7, background: '#101418', color: '#D7DDE3' }}>
+        <div><span style={{ color: '#7C8894' }}>$</span> pr-doctor analyze acme/ledger-api#4821</div>
+        <div style={{ marginTop: 8, color: '#9CDCFF' }}>▸ Graphify · mapping blast radius… <span style={{ color: '#5FCF83' }}>✓</span></div>
+        <div style={{ color: '#9CDCFF' }}>▸ Code Analyst · reviewing diff <span style={{ color: '#5FCF83' }}>✓</span></div>
+        <div style={{ color: '#9CDCFF' }}>▸ Test &amp; Security · tracing reachability <span style={{ color: '#5FCF83' }}>✓</span></div>
+        <div style={{ color: '#9CDCFF' }}>▸ Docs &amp; Compliance <span style={{ color: '#5FCF83' }}>✓</span></div>
+        <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #232A31' }}>
+          <div>verdict  <span style={{ color: '#F38BA0', fontWeight: 600 }}>BLOCK</span>  <span style={{ color: '#7C8894' }}>· 91% confidence</span></div>
+          <div style={{ color: '#7C8894' }}>8 findings · 3 files reached · 1 trust boundary without tests</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   return (
-    <div style={{ background: 'var(--ground)', minHeight: '100vh', fontFamily: '"IBM Plex Sans", system-ui, sans-serif', color: 'var(--ink)' }}>
-
-      {/* ── Nav ─────────────────────────────────────────────────────── */}
-      <header style={{ background: 'var(--chart)', borderBottom: '1px solid var(--rule-strong)', padding: '0 24px' }}>
-        <div style={{ maxWidth: 1060, margin: '0 auto', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 13, fontWeight: 600, letterSpacing: '0.04em', color: 'var(--plex)' }}>
-            PR Doctor
-          </span>
-          <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
-            <Link href="/how-it-works" style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, color: 'var(--muted)', textDecoration: 'none', letterSpacing: '0.06em', textTransform: 'uppercase' }}>How it works</Link>
-            <Link href="/connect" style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, color: 'var(--plex)', textDecoration: 'none', letterSpacing: '0.06em', textTransform: 'uppercase', border: '1px solid var(--plex)', padding: '4px 10px' }}>Connect GitHub</Link>
-            <span className="eyebrow">IBM BOB 2.0</span>
+    <Shell>
+      {/* ── Hero ─────────────────────────────────────────────────────── */}
+      <section style={{ padding: 'clamp(56px, 8vw, 96px) 0 clamp(40px, 6vw, 64px)' }}>
+        <div className="stack-sm" style={{ display: 'grid', gridTemplateColumns: '1.05fr 0.95fr', gap: 'clamp(36px, 5vw, 64px)', alignItems: 'center' }}>
+          <div>
+            <div className="eyebrow" style={{ color: 'var(--plex)', marginBottom: 18 }}>
+              IBM TechXchange 2026 · AI-powered code review
+            </div>
+            <h1 className="display" style={{ fontSize: 'clamp(34px, 5.2vw, 56px)', lineHeight: 1.04, color: 'var(--ink)', margin: '0 0 20px', letterSpacing: '-0.02em' }}>
+              Know why a pull request is dangerous — before you merge.
+            </h1>
+            <p style={{ fontSize: 17, lineHeight: 1.6, color: 'var(--muted)', maxWidth: '44ch', margin: '0 0 32px' }}>
+              Four IBM BOB 2.0 specialists investigate every PR in parallel and show you the exact
+              line, the exact evidence, and the exact fix.
+            </p>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <a href="/investigation" className="btn-hover" style={{ display: 'inline-flex', alignItems: 'center', fontFamily: '"IBM Plex Mono", monospace', fontWeight: 600, fontSize: 14, color: '#fff', background: 'var(--ink)', padding: '13px 26px', borderRadius: 'var(--radius-sm)', textDecoration: 'none', boxShadow: 'var(--shadow-md)' }}>
+                Analyze a Pull Request
+              </a>
+              <a href="/connect" className="btn-hover" style={{ display: 'inline-flex', alignItems: 'center', fontFamily: '"IBM Plex Mono", monospace', fontWeight: 600, fontSize: 14, color: 'var(--ink)', background: 'transparent', padding: '13px 26px', borderRadius: 'var(--radius-sm)', textDecoration: 'none', border: '1px solid var(--rule-strong)' }}>
+                Connect GitHub
+              </a>
+            </div>
+            <div className="mono" style={{ marginTop: 28, fontSize: 12, color: 'var(--faint)' }}>
+              Open source · runs on-device · evidence-backed, not guessed
+            </div>
           </div>
-        </div>
-      </header>
 
-      {/* ── Hero ────────────────────────────────────────────────────── */}
-      <section style={{ background: 'var(--plex)', padding: '64px 24px 56px', borderBottom: '4px solid var(--ink)' }}>
-        <div style={{ maxWidth: 1060, margin: '0 auto' }}>
-          <div className="eyebrow" style={{ color: 'rgba(255,255,255,0.6)', marginBottom: 18 }}>
-            IBM TechXchange 2026 · AI-Powered Code Review
-          </div>
-          <h1 style={{
-            fontFamily: '"IBM Plex Sans Condensed", sans-serif',
-            fontWeight: 700,
-            fontSize: 'clamp(28px, 5vw, 52px)',
-            lineHeight: 1.1,
-            color: '#FFFFFF',
-            margin: '0 0 20px',
-            maxWidth: '18ch',
-          }}>
-            Know why a pull request is dangerous before you merge it.
-          </h1>
-          <p style={{ fontSize: 16, lineHeight: 1.65, color: 'rgba(255,255,255,0.82)', maxWidth: '60ch', margin: '0 0 36px' }}>
-            Four IBM BOB 2.0 specialists investigate every PR in parallel and show
-            you the exact line, the exact evidence, and the exact fix.
-          </p>
-          <Link href="/investigation" style={{
-            display: 'inline-block',
-            background: '#FFFFFF',
-            color: 'var(--plex)',
-            fontWeight: 600,
-            fontSize: 14,
-            padding: '12px 28px',
-            border: '2px solid #FFFFFF',
-            textDecoration: 'none',
-            letterSpacing: '0.02em',
-          }}>
-            Analyze a Pull Request
-          </Link>
+          <TerminalCard />
         </div>
       </section>
 
-      {/* ── Verdict preview card (triage tag) ───────────────────────── */}
-      <section style={{ padding: '0 24px', marginTop: 32 }}>
-        <div style={{ maxWidth: 1060, margin: '0 auto' }}>
+      {/* ── Verdict preview ──────────────────────────────────────────── */}
+      <section style={{ marginTop: 8 }}>
+        <SectionHeading
+          eyebrow={`Demo · ${fixture.context.repo} · PR #${fixture.context.number}`}
+          title="A real verdict, end to end"
+          sub="The Orchestrator weighs every finding and stamps a traceable decision — separating hard evidence from inference at every step."
+        />
 
-          <div className="eyebrow" style={{ marginBottom: 10 }}>
-            Demo — {fixture.context.repo} · PR #{fixture.context.number}
-          </div>
-
-          {/* triage tag — matches preview.html exactly */}
+        <div className="ui-card" style={{ overflow: 'hidden' }}>
+          {/* triage tag */}
           <div style={{
-            position: 'relative',
-            background: 'var(--chart)',
-            border: '1px solid var(--rule-strong)',
-            borderLeft: '8px solid var(--block)',
-            padding: '22px 26px 22px 30px',
             display: 'grid',
             gridTemplateColumns: 'auto 1fr auto',
-            gap: 26,
+            gap: 24,
             alignItems: 'center',
-          }}>
-            {/* stamp */}
-            <div style={{
-              fontFamily: '"IBM Plex Sans Condensed", sans-serif',
-              fontWeight: 700,
-              fontSize: 52,
-              lineHeight: 0.9,
-              letterSpacing: '-0.01em',
-              color: 'var(--block)',
-              border: '3px solid var(--block)',
-              padding: '8px 16px 10px',
-              transform: 'rotate(-1.5deg)',
+            padding: 'clamp(20px, 3vw, 28px)',
+            borderLeft: '6px solid var(--block)',
+            background: `linear-gradient(90deg, ${severityWash(fixture.reports[0]?.findings[0]?.severity ?? 'high')}, transparent 55%)`,
+          }} className="stack-sm">
+            <div className="display" style={{
+              fontSize: 'clamp(38px, 5.5vw, 56px)', lineHeight: 0.95, color: 'var(--block)',
+              border: '2px solid var(--block)', padding: '6px 16px 10px', borderRadius: 'var(--radius-sm)',
+              transform: 'rotate(-1.5deg)', justifySelf: 'center',
             }}>
               {fixture.decision}
             </div>
-
-            {/* rationale */}
             <div>
-              <div className="eyebrow" style={{ marginBottom: 6 }}>
-                Orchestrator verdict · IBM BOB 2.0
+              <div className="eyebrow" style={{ color: 'var(--plex)', marginBottom: 8 }}>Orchestrator verdict · {confidencePct} confidence</div>
+              <div style={{ fontSize: 15, maxWidth: '54ch', lineHeight: 1.6 }}>{fixture.rationale}</div>
+              <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <span className="mono" style={{ fontSize: 12, color: 'var(--muted)', background: 'var(--surface)', border: '1px solid var(--rule)', padding: '4px 10px', borderRadius: 'var(--radius-sm)' }}>{fixture.context.title}</span>
+                <span className="mono" style={{ fontSize: 12, color: 'var(--plex)', background: 'var(--plex-wash)', padding: '4px 10px', borderRadius: 'var(--radius-sm)' }}>{totalFindings} findings</span>
               </div>
-              <div style={{ fontSize: 14.5, maxWidth: '48ch' }}>
-                {fixture.rationale}
-              </div>
-              <div style={{ marginTop: 10, fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, color: 'var(--muted)' }}>
-                {fixture.context.title} · {totalFindings} findings
-              </div>
-            </div>
-
-            {/* confidence */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <div className="eyebrow">Confidence</div>
-              <div style={{ fontFamily: '"IBM Plex Sans Condensed", sans-serif', fontWeight: 700, fontSize: 34, lineHeight: 1, color: 'var(--ink)' }}>
-                {confidencePct}
-              </div>
-              <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, color: 'var(--muted)' }}>not evidence</div>
             </div>
           </div>
 
-          {/* chart body — findings preview */}
-          <div style={{ background: 'var(--chart)', border: '1px solid var(--rule-strong)', borderTop: 0 }}>
-            <div style={{ padding: '14px 26px', borderBottom: '1px solid var(--rule)' }}>
-              <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 12 }}>
-                Top findings
-              </div>
-              {fixture.reports.flatMap(r => r.findings).slice(0, 3).map(f => (
-                <div key={f.id} style={{
-                  display: 'grid',
-                  gridTemplateColumns: '78px 1fr auto',
-                  gap: 16,
-                  alignItems: 'start',
-                  padding: '10px 0',
-                  borderTop: '1px solid var(--rule)',
+          {/* top findings */}
+          <div style={{ borderTop: '1px solid var(--rule)', padding: '8px 28px 16px' }}>
+            <div className="eyebrow" style={{ color: 'var(--muted)', margin: '16px 0 6px' }}>Top findings</div>
+            {fixture.reports.flatMap(r => r.findings).slice(0, 3).map((f, idx) => (
+              <div key={f.id} style={{
+                display: 'grid',
+                gridTemplateColumns: 'auto 1fr auto',
+                gap: 16,
+                alignItems: 'center',
+                padding: '14px 0',
+                borderTop: idx > 0 ? '1px solid var(--rule)' : undefined,
+              }}>
+                <span className="mono" style={{
+                  fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase',
+                  color: severityColor(f.severity), background: severityWash(f.severity),
+                  border: `1px solid ${severityColor(f.severity)}`, padding: '4px 9px', borderRadius: 'var(--radius-sm)',
                 }}>
-                  <div style={{
-                    fontFamily: '"IBM Plex Mono", monospace',
-                    fontSize: 10,
-                    fontWeight: 600,
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                    padding: '3px 0',
-                    textAlign: 'center',
-                    border: '1px solid',
-                    color: f.severity === 'critical' ? 'var(--block)' : f.severity === 'high' ? 'var(--block)' : f.severity === 'medium' ? 'var(--caution)' : 'var(--muted)',
-                    borderColor: f.severity === 'critical' ? 'var(--block)' : f.severity === 'high' ? 'var(--block)' : f.severity === 'medium' ? 'var(--caution)' : 'var(--rule-strong)',
-                    background: f.severity === 'critical' ? 'var(--block-wash)' : 'transparent',
-                  }}>
-                    {f.severity}
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 500 }}>{f.title}</div>
-                    <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12.5, color: 'var(--muted)', marginTop: 2 }}>
-                      {f.file}:{f.line}
-                    </div>
-                  </div>
-                  <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10.5, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--plex)', background: 'var(--plex-wash)', padding: '3px 7px', whiteSpace: 'nowrap' }}>
-                    {fixture.reports.find(r => r.findings.some(ff => ff.id === f.id))?.displayName}
-                  </div>
+                  {f.severity}
+                </span>
+                <div>
+                  <div style={{ fontWeight: 500 }}>{f.title}</div>
+                  <div className="mono" style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 2 }}>{f.file}:{f.line}</div>
                 </div>
-              ))}
-            </div>
-            <div style={{ padding: '10px 26px' }}>
-              <Link href="/investigation" style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, color: 'var(--plex)', textDecoration: 'none', letterSpacing: '0.06em' }}>
-                Run live investigation &rarr;
-              </Link>
-            </div>
+                <span className="mono" style={{ fontSize: 10.5, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--plex)', background: 'var(--plex-wash)', padding: '4px 9px', borderRadius: 'var(--radius-sm)', whiteSpace: 'nowrap' }}>
+                  {fixture.reports.find(r => r.findings.some(ff => ff.id === f.id))?.displayName}
+                </span>
+              </div>
+            ))}
+            <Link href="/investigation" style={{ display: 'inline-block', fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, color: 'var(--plex)', textDecoration: 'none', letterSpacing: '0.06em', marginTop: 6 }}>
+              Run live investigation →
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* ── Trust strip ─────────────────────────────────────────────── */}
-      <section style={{ padding: '28px 24px' }}>
-        <div style={{ maxWidth: 1060, margin: '0 auto', background: 'var(--chart)', border: '1px solid var(--rule-strong)', padding: '16px 26px', display: 'flex', gap: '32px 48px', flexWrap: 'wrap', alignItems: 'center' }}>
+      {/* ── Trust strip ──────────────────────────────────────────────── */}
+      <section style={{ marginTop: 32 }}>
+        <div className="ui-card" style={{ display: 'flex', gap: '24px 48px', flexWrap: 'wrap', alignItems: 'center', padding: '20px 28px', justifyContent: 'center' }}>
           {['IBM BOB 2.0', 'Graphify Context', 'Evidence-Backed', 'GitHub'].map(item => (
-            <span key={item} style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--plex)' }}>
+            <span key={item} className="mono" style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)' }}>
               {item}
             </span>
           ))}
         </div>
       </section>
 
-      {/* ── Four agent cards ────────────────────────────────────────── */}
-      <section style={{ padding: '0 24px 40px' }}>
-        <div style={{ maxWidth: 1060, margin: '0 auto' }}>
-          <div className="eyebrow" style={{ marginBottom: 16 }}>Specialists</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 1, background: 'var(--rule-strong)', border: '1px solid var(--rule-strong)' }}>
-            {AGENTS.map((agent) => (
-              <div key={agent.id} style={{ background: 'var(--chart)', padding: '22px 22px 24px' }}>
-                <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--plex)', background: 'var(--plex-wash)', display: 'inline-block', padding: '2px 7px', marginBottom: 12 }}>
+      {/* ── Four agent cards ─────────────────────────────────────────── */}
+      <section style={{ marginTop: 64 }}>
+        <SectionHeading
+          eyebrow="Specialists"
+          title="Four roles, one accountable verdict"
+          sub="Three specialists investigate in parallel; the Orchestrator weighs their findings and decides — with explicit reasoning for every disagreement."
+        />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 16 }}>
+          {AGENTS.map(agent => (
+            <div key={agent.id} className="ui-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 12, transition: 'transform .14s ease, box-shadow .14s ease' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span className="mono" style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--plex)', background: 'var(--plex-wash)', padding: '3px 8px', borderRadius: 'var(--radius-sm)' }}>
                   {agent.mode} mode
-                </div>
-                <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 8 }}>{agent.name}</div>
-                <div style={{ fontSize: 13.5, color: 'var(--ink)', lineHeight: 1.55, marginBottom: 12 }}>{agent.job}</div>
-                <div style={{ borderTop: '1px solid var(--rule)', paddingTop: 10 }}>
-                  <div className="eyebrow" style={{ marginBottom: 4 }}>Output</div>
-                  <div style={{ fontSize: 13, color: 'var(--muted)' }}>{agent.output}</div>
-                </div>
+                </span>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--plex)' }} />
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Four-step flow ──────────────────────────────────────────── */}
-      <section style={{ padding: '0 24px 40px' }}>
-        <div style={{ maxWidth: 1060, margin: '0 auto' }}>
-          <div className="eyebrow" style={{ marginBottom: 16 }}>How it works</div>
-          <div style={{ background: 'var(--chart)', border: '1px solid var(--rule-strong)' }}>
-            {STEPS.map((step, i) => (
-              <div key={step.n} style={{
-                display: 'grid',
-                gridTemplateColumns: '56px 1fr',
-                gap: '0 20px',
-                alignItems: 'start',
-                padding: '18px 22px',
-                borderTop: i > 0 ? '1px solid var(--rule)' : undefined,
-              }}>
-                <div style={{
-                  fontFamily: '"IBM Plex Sans Condensed", sans-serif',
-                  fontWeight: 700,
-                  fontSize: 28,
-                  lineHeight: 1,
-                  color: 'var(--rule-strong)',
-                  paddingTop: 2,
-                }}>
-                  {step.n}
-                </div>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>{step.label}</div>
-                  <div style={{ fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.55 }}>{step.desc}</div>
-                </div>
+              <h3 className="display" style={{ fontSize: 19, margin: 0, letterSpacing: '-0.01em' }}>{agent.name}</h3>
+              <p style={{ fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.6, margin: 0, flex: 1 }}>{agent.job}</p>
+              <div style={{ borderTop: '1px solid var(--rule)', paddingTop: 12 }}>
+                <div className="eyebrow" style={{ marginBottom: 4 }}>Output</div>
+                <div style={{ fontSize: 13, color: 'var(--muted)' }}>{agent.output}</div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* ── CTA repeat ──────────────────────────────────────────────── */}
-      <section style={{ padding: '0 24px 56px' }}>
-        <div style={{ maxWidth: 1060, margin: '0 auto', background: 'var(--plex)', padding: '36px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20 }}>
-          <div>
-            <div style={{ fontFamily: '"IBM Plex Sans Condensed", sans-serif', fontWeight: 700, fontSize: 22, color: '#FFFFFF', marginBottom: 6 }}>
-              See it run on a real security regression.
+      {/* ── Four-step flow ───────────────────────────────────────────── */}
+      <section style={{ marginTop: 64 }}>
+        <SectionHeading
+          eyebrow="Pipeline"
+          title="How an investigation runs"
+          sub="From a raw PR to a traceable verdict in four mechanical steps — no guessing, every link documented."
+        />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+          {STEPS.map((step, i) => (
+            <div key={step.n} className="ui-card" style={{ padding: '26px 24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                <span className="display" style={{ fontSize: 30, lineHeight: 1, color: 'var(--plex)', opacity: 0.35 }}>{step.n}</span>
+                {i < STEPS.length - 1 && <span className="mono" style={{ color: 'var(--faint)', fontSize: 14 }}>→</span>}
+              </div>
+              <div className="display" style={{ fontSize: 17, margin: '0 0 8px', color: 'var(--ink)' }}>{step.label}</div>
+              <div style={{ fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.6 }}>{step.desc}</div>
             </div>
-            <div style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.72)' }}>
-              {fixture.context.repo} · PR #{fixture.context.number} · {fixture.context.title}
-            </div>
-          </div>
-          <Link href="/investigation" style={{
-            display: 'inline-block',
-            background: 'transparent',
-            color: '#FFFFFF',
-            fontWeight: 600,
-            fontSize: 14,
-            padding: '11px 28px',
-            border: '2px solid #FFFFFF',
-            textDecoration: 'none',
-            letterSpacing: '0.02em',
-            whiteSpace: 'nowrap',
-          }}>
-            Analyze a Pull Request
-          </Link>
+          ))}
         </div>
       </section>
 
-      {/* ── Footer ──────────────────────────────────────────────────── */}
-      <footer style={{ background: 'var(--ink)', borderTop: '1px solid #2C3338', padding: '22px 24px' }}>
-        <div style={{ maxWidth: 1060, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-          <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, color: '#68757F' }}>
-            Prototype · IBM TechXchange 2026 Dev Day
-          </span>
-          <a href="https://github.com" style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, color: '#68757F', textDecoration: 'none', letterSpacing: '0.04em' }}>
-            GitHub
+      {/* ── CTA ──────────────────────────────────────────────────────── */}
+      <section style={{ marginTop: 64 }}>
+        <div className="ui-card" style={{ padding: 'clamp(28px, 4vw, 44px)', textAlign: 'center', background: 'linear-gradient(135deg, var(--surface), #F1F3F5)' }}>
+          <h2 className="display" style={{ fontSize: 'clamp(20px, 3vw, 28px)', margin: '0 0 8px', color: 'var(--ink)' }}>See it run on a real security regression.</h2>
+          <p className="mono" style={{ fontSize: 13, color: 'var(--muted)', margin: '0 0 24px' }}>
+            {fixture.context.repo} · PR #{fixture.context.number} · {fixture.context.title}
+          </p>
+          <a href="/investigation" className="btn-hover" style={{ display: 'inline-flex', alignItems: 'center', fontFamily: '"IBM Plex Mono", monospace', fontWeight: 600, fontSize: 14, color: '#fff', background: 'var(--ink)', padding: '13px 30px', borderRadius: 'var(--radius-sm)', textDecoration: 'none', boxShadow: 'var(--shadow-md)' }}>
+            Run the demo →
           </a>
         </div>
-      </footer>
-
-    </div>
+      </section>
+    </Shell>
   );
 }

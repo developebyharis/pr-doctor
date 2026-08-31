@@ -4,12 +4,13 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import type { AgentReport, FinalVerdict, Finding, Severity } from '@/lib/types';
+import { Shell, mono } from '@/app/components/ui';
 
 const SEV_STYLE: Record<Severity, { color: string; borderColor: string; background: string }> = {
-  critical: { color: '#B3261E', borderColor: '#B3261E', background: '#FBEDEC' },
-  high:     { color: '#B3261E', borderColor: '#B3261E', background: 'transparent' },
-  medium:   { color: '#8A5A00', borderColor: '#8A5A00', background: 'transparent' },
-  low:      { color: '#68757F', borderColor: '#AEB8C0', background: 'transparent' },
+  critical: { color: 'var(--block)', borderColor: 'var(--block)', background: 'var(--block-wash)' },
+  high:     { color: 'var(--block)', borderColor: 'var(--block)', background: 'transparent' },
+  medium:   { color: 'var(--caution)', borderColor: 'var(--caution)', background: 'transparent' },
+  low:      { color: 'var(--muted)', borderColor: 'var(--rule-strong)', background: 'transparent' },
 };
 
 function parseDiff(raw: string): { type: 'del' | 'add' | 'ctx'; text: string }[] {
@@ -18,6 +19,14 @@ function parseDiff(raw: string): { type: 'del' | 'add' | 'ctx'; text: string }[]
     if (line.startsWith('+') && !line.startsWith('+++')) return { type: 'add', text: line };
     return { type: 'ctx', text: line };
   });
+}
+
+function statusPill({ label, color, dashed = false }: { label: string; color: string; dashed?: boolean }) {
+  return (
+    <div className="mono" style={{ fontSize: 13, color, border: `1px ${dashed ? 'dashed' : 'solid'} ${color}`, padding: '8px 14px', borderRadius: 'var(--radius-sm)' }}>
+      {label}
+    </div>
+  );
 }
 
 export default function FindingPage() {
@@ -30,7 +39,6 @@ export default function FindingPage() {
     // A real PR investigation passes its job id so we fetch the stored verdict
     // rather than the demo fixture. If none is supplied, fall back to the demo.
     const jobId = searchParams.get('job') ?? 'demo';
-    console.log(jobId)
     fetch(`/api/verdict/${encodeURIComponent(jobId)}`)
       .then(r => r.json())
       .then(setVerdict)
@@ -39,17 +47,13 @@ export default function FindingPage() {
 
   if (error) {
     return (
-      <div style={wrapStyle}>
-        <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 13, color: '#B3261E' }}>{error}</div>
-      </div>
+      <Shell maxW={1060}>{statusPill({ label: error, color: 'var(--block)' })}</Shell>
     );
   }
 
   if (!verdict) {
     return (
-      <div style={wrapStyle}>
-        <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 13, color: '#68757F' }}>Loading…</div>
-      </div>
+      <Shell maxW={1060}><div className="mono" style={{ fontSize: 13, color: 'var(--muted)' }}>Loading…</div></Shell>
     );
   }
 
@@ -63,12 +67,10 @@ export default function FindingPage() {
 
   if (!finding || !report) {
     return (
-      <div style={wrapStyle}>
-        <p style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 13, color: '#14181C' }}>
-          Finding not found.
-        </p>
-        <Link href="/investigation" style={backLinkStyle}>&larr; Back to investigation</Link>
-      </div>
+      <Shell maxW={1060}>
+        <p className="mono" style={{ fontSize: 13, color: 'var(--ink)' }}>Finding not found.</p>
+        <Link href="/investigation" style={{ ...mono, fontSize: 12, color: 'var(--plex)', textDecoration: 'none' }}>&larr; Back to investigation</Link>
+      </Shell>
     );
   }
 
@@ -82,221 +84,124 @@ export default function FindingPage() {
   const diffLines = fileChange ? parseDiff(fileChange.diff) : [];
 
   return (
-    <div style={{ background: '#E9ECEF', minHeight: '100vh', fontFamily: '"IBM Plex Sans", system-ui, sans-serif', color: '#14181C', padding: '28px 20px 80px' }}>
-      <div style={{ maxWidth: 1060, margin: '0 auto' }}>
+    <Shell maxW={1060}>
+      {/* Back link */}
+      <div style={{ marginBottom: 20, paddingTop: 28 }}>
+        <Link href="/investigation" style={{ ...mono, fontSize: 12, color: 'var(--muted)', textDecoration: 'none', letterSpacing: '0.04em' }}>&larr; Investigation</Link>
+      </div>
 
-        {/* 1. Back link */}
-        <div style={{ marginBottom: 20 }}>
-          <Link href="/investigation" style={backLinkStyle}>&larr; Investigation</Link>
+      {/* Triage tag wrapper */}
+      <div className="ui-card" style={{ overflow: 'hidden', borderLeft: `8px solid ${sev.borderColor}`, boxShadow: 'var(--shadow-md)' }}>
+
+        {/* Severity + title */}
+        <div style={{ padding: 'clamp(18px, 3vw, 24px) clamp(18px, 3vw, 26px)', borderBottom: '1px solid var(--rule)' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 14, marginBottom: 10 }}>
+            <span className="mono" style={{
+              fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase',
+              padding: '4px 10px', borderRadius: 'var(--radius-sm)',
+              border: '1px solid', color: sev.color, borderColor: sev.borderColor,
+              background: sev.background, whiteSpace: 'nowrap',
+            }}>
+              {finding.severity}
+            </span>
+            <h1 className="display" style={{ fontSize: 'clamp(19px, 2.6vw, 24px)', margin: 0, lineHeight: 1.2 }}>{finding.title}</h1>
+          </div>
+
+          {/* file:line + agent badge */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 16px', alignItems: 'center' }}>
+            <span className="mono" style={{ fontSize: 13, color: 'var(--muted)' }}>{finding.file}:{finding.line}</span>
+            <span className="mono" style={{
+              fontSize: 10.5, letterSpacing: '0.06em', textTransform: 'uppercase',
+              color: 'var(--plex)', background: 'var(--plex-wash)',
+              padding: '4px 10px', borderRadius: 'var(--radius-sm)', whiteSpace: 'nowrap',
+            }}>
+              Reported by {report.displayName} · BOB {report.mode} mode
+            </span>
+          </div>
         </div>
 
-        {/* Triage tag wrapper */}
-        <div style={{ background: '#FFFFFF', border: '1px solid #AEB8C0', borderLeft: `8px solid ${sev.borderColor}` }}>
-
-          {/* 2. Severity + title */}
-          <div style={{ padding: '20px 26px', borderBottom: '1px solid #D2D8DD' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 10 }}>
-              <div style={{
-                fontFamily: '"IBM Plex Mono", monospace',
-                fontSize: 10,
-                fontWeight: 600,
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                padding: '3px 8px',
-                border: '1px solid',
-                color: sev.color,
-                borderColor: sev.borderColor,
-                background: sev.background,
-                whiteSpace: 'nowrap',
-              }}>
-                {finding.severity}
-              </div>
-              <div style={{ fontWeight: 600, fontSize: 17 }}>{finding.title}</div>
+        {/* OBSERVED / CONCLUDED split */}
+        <div style={{ padding: 'clamp(18px, 3vw, 24px) clamp(18px, 3vw, 26px)', borderBottom: '1px solid var(--rule)' }}>
+          <div className="stack-sm" style={{ display: 'grid', gridTemplateColumns: '1fr 1px 1fr', border: '1px solid var(--rule-strong)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+            {/* Observed */}
+            <div style={{ padding: '18px 20px', background: '#FAFBFC' }}>
+              <div className="mono" style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ink)', marginBottom: 9 }}>Observed</div>
+              <p style={{ margin: 0, fontSize: 14, lineHeight: 1.65 }}>{finding.evidence}</p>
             </div>
 
-            {/* 3. file:line + agent badge */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 16px', alignItems: 'center' }}>
-              <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 13, color: '#68757F' }}>
-                {finding.file}:{finding.line}
-              </span>
-              <span style={{
-                fontFamily: '"IBM Plex Mono", monospace',
-                fontSize: 10.5,
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-                color: '#24408E',
-                background: '#EDF0F8',
-                padding: '3px 7px',
-                whiteSpace: 'nowrap',
-              }}>
-                Reported by {report.displayName} · BOB {report.mode} mode
-              </span>
+            {/* Gutter */}
+            <div style={{ background: 'var(--rule-strong)' }} />
+
+            {/* Concluded */}
+            <div style={{ padding: '18px 20px' }}>
+              <div className="mono" style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--plex)', marginBottom: 9 }}>Concluded</div>
+              <p style={{ margin: 0, fontSize: 14, lineHeight: 1.65 }}>{finding.inference}</p>
             </div>
           </div>
-
-          {/* 4. OBSERVED / CONCLUDED split */}
-          <div style={{ padding: '20px 26px', borderBottom: '1px solid #D2D8DD' }}>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1px 1fr',
-              border: '1px solid #AEB8C0',
-            }}>
-              {/* Observed */}
-              <div style={{ padding: '16px 18px', background: '#FAFBFC' }}>
-                <div style={{
-                  fontFamily: '"IBM Plex Mono", monospace',
-                  fontSize: 10,
-                  fontWeight: 600,
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
-                  color: '#14181C',
-                  marginBottom: 9,
-                }}>
-                  Observed
-                </div>
-                <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6 }}>{finding.evidence}</p>
-              </div>
-
-              {/* Gutter */}
-              <div style={{ background: '#AEB8C0' }} />
-
-              {/* Concluded */}
-              <div style={{ padding: '16px 18px' }}>
-                <div style={{
-                  fontFamily: '"IBM Plex Mono", monospace',
-                  fontSize: 10,
-                  fontWeight: 600,
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
-                  color: '#24408E',
-                  marginBottom: 9,
-                }}>
-                  Concluded
-                </div>
-                <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6 }}>{finding.inference}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* 5. Diff */}
-          {diffLines.length > 0 && (
-            <div style={{ padding: '0 26px 20px', borderBottom: '1px solid #D2D8DD' }}>
-              <div style={{
-                fontFamily: '"IBM Plex Mono", monospace',
-                fontSize: 11,
-                fontWeight: 600,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                color: '#68757F',
-                margin: '16px 0 8px',
-              }}>
-                {fileChange.path}
-              </div>
-              <div style={{
-                background: '#F6F8F9',
-                border: '1px solid #D2D8DD',
-                padding: '12px 14px',
-                fontFamily: '"IBM Plex Mono", monospace',
-                fontSize: 12.5,
-                lineHeight: 1.65,
-                overflowX: 'auto',
-                whiteSpace: 'pre',
-              }}>
-                {diffLines.map((line, i) => {
-                  const style: React.CSSProperties =
-                    line.type === 'del'
-                      ? { background: '#FBEDEC', color: '#8C1D18', display: 'block' }
-                      : line.type === 'add'
-                      ? { background: '#E9F2EC', color: '#14512F', display: 'block' }
-                      : { color: '#68757F', display: 'block' };
-                  return <span key={i} style={style}>{line.text}</span>;
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* 6. Reaches */}
-          {finding.reaches.length > 0 && (
-            <div style={{ padding: '16px 26px', borderBottom: '1px solid #D2D8DD' }}>
-              <div style={{
-                fontFamily: '"IBM Plex Mono", monospace',
-                fontSize: 11,
-                fontWeight: 600,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                color: '#68757F',
-                marginBottom: 10,
-              }}>
-                This finding propagates to
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {finding.reaches.map(path => (
-                  <span key={path} style={{
-                    fontFamily: '"IBM Plex Mono", monospace',
-                    fontSize: 12.5,
-                    color: '#14181C',
-                    background: '#F6F8F9',
-                    border: '1px solid #D2D8DD',
-                    padding: '3px 10px',
-                    display: 'inline-block',
-                    alignSelf: 'start',
-                  }}>
-                    {path}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* 7. Remediation */}
-          <div style={{ padding: '16px 26px' }}>
-            <div style={{
-              borderLeft: '3px solid #1F6B45',
-              background: '#F2F8F4',
-              padding: '12px 16px',
-            }}>
-              <span style={{
-                fontFamily: '"IBM Plex Mono", monospace',
-                fontSize: 10,
-                fontWeight: 600,
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-                color: '#1F6B45',
-                display: 'block',
-                marginBottom: 5,
-              }}>
-                Remediation
-              </span>
-              <span style={{ fontSize: 14, lineHeight: 1.6 }}>{finding.remediation}</span>
-            </div>
-          </div>
-
         </div>
 
-        {/* Confidence note */}
-        <div style={{ marginTop: 14, fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, color: '#68757F' }}>
-          Finding confidence: {Math.round(finding.confidence * 100)}% — not evidence, only a hint about how hard to look.
+        {/* Diff */}
+        {diffLines.length > 0 && (
+          <div style={{ padding: '0 clamp(18px, 3vw, 26px) 22px', borderBottom: '1px solid var(--rule)' }}>
+            <div className="mono" style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)', margin: '18px 0 8px' }}>
+              {fileChange.path}
+            </div>
+            <div className="mono" style={{
+              background: '#F6F8F9', border: '1px solid var(--rule)', borderRadius: 'var(--radius-sm)',
+              padding: '14px 16px', fontSize: 12.5, lineHeight: 1.65, overflowX: 'auto', whiteSpace: 'pre',
+            }}>
+              {diffLines.map((line, i) => {
+                const s: React.CSSProperties =
+                  line.type === 'del'
+                    ? { background: 'var(--block-wash)', color: 'var(--block)', display: 'block' }
+                    : line.type === 'add'
+                    ? { background: 'var(--clear-wash)', color: 'var(--clear)', display: 'block' }
+                    : { color: 'var(--muted)', display: 'block' };
+                return <span key={i} style={s}>{line.text}</span>;
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Reaches */}
+        {finding.reaches.length > 0 && (
+          <div style={{ padding: '16px clamp(18px, 3vw, 26px)', borderBottom: '1px solid var(--rule)' }}>
+            <div className="mono" style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 10 }}>
+              This finding propagates to
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {finding.reaches.map(path => (
+                <span key={path} className="mono" style={{
+                  fontSize: 12.5, color: 'var(--ink)', background: '#F6F8F9',
+                  border: '1px solid var(--rule)', borderRadius: 'var(--radius-sm)',
+                  padding: '4px 10px', display: 'inline-block', alignSelf: 'start',
+                }}>
+                  {path}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Remediation */}
+        <div style={{ padding: '16px clamp(18px, 3vw, 26px) 22px' }}>
+          <div style={{ borderLeft: '4px solid var(--clear)', background: 'var(--clear-wash)', borderRadius: 'var(--radius)', padding: '14px 18px' }}>
+            <span className="mono" style={{
+              fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase',
+              color: 'var(--clear)', display: 'block', marginBottom: 5,
+            }}>
+              Remediation
+            </span>
+            <span style={{ fontSize: 14, lineHeight: 1.6 }}>{finding.remediation}</span>
+          </div>
         </div>
 
       </div>
-    </div>
+
+      {/* Confidence note */}
+      <div className="mono" style={{ marginTop: 16, fontSize: 12, color: 'var(--muted)', marginBottom: 80 }}>
+        Finding confidence: {Math.round(finding.confidence * 100)}% — not evidence, only a hint about how hard to look.
+      </div>
+    </Shell>
   );
 }
-
-const wrapStyle: React.CSSProperties = {
-  background: '#E9ECEF',
-  minHeight: '100vh',
-  fontFamily: '"IBM Plex Sans", system-ui, sans-serif',
-  color: '#14181C',
-  padding: '28px 20px 80px',
-  maxWidth: 1060,
-  margin: '0 auto',
-};
-
-const backLinkStyle: React.CSSProperties = {
-  fontFamily: '"IBM Plex Mono", monospace',
-  fontSize: 12,
-  color: '#68757F',
-  textDecoration: 'none',
-  letterSpacing: '0.04em',
-};

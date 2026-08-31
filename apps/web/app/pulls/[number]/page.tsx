@@ -7,25 +7,24 @@ import type { GithubPRDetail, GithubFileDiff } from '@/app/api/github/prs/[numbe
 import type { GraphifyContextResponse } from '@/app/api/graphify/route';
 import { readRepo, readToken } from '@/lib/token-store';
 import { GraphifyNetwork, graphC, buildGraphLayout } from '@/app/components/GraphifyNetwork';
+import { Shell, mono, display } from '@/app/components/ui';
 
 const C = {
-  bg: '#E9ECEF',
+  bg: '#F6F6F5',
   chart: '#FFFFFF',
-  ink: '#14181C',
-  muted: '#68757F',
-  rule: '#D2D8DD',
-  ruleStrong: '#AEB8C0',
-  plex: '#24408E',
-  plexWash: '#EDF0F8',
-  block: '#B3261E',
-  blockWash: '#FBEDEC',
-  caution: '#8A5A00',
-  clear: '#1F6B45',
-  clearWash: '#E9F2EC',
-  ground: '#F6F8FA',
+  ink: '#111113',
+  muted: '#6B7280',
+  rule: '#E7E7E5',
+  ruleStrong: '#D4D4D1',
+  plex: '#4A5568',
+  plexWash: '#F1F3F5',
+  block: '#B4232A',
+  blockWash: '#FBEFEF',
+  caution: '#9A6A00',
+  clear: '#157A5B',
+  clearWash: '#E9F5F0',
+  ground: '#F6F6F5',
 };
-
-const mono: React.CSSProperties = { fontFamily: '"IBM Plex Mono", monospace' };
 
 function Eyebrow({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
@@ -46,17 +45,17 @@ function relativeTime(iso: string): string {
 
 function StatusPill({ state, draft }: { state: string; draft: boolean }) {
   if (draft) return (
-    <span style={{ ...mono, fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: C.muted, border: `1px solid ${C.ruleStrong}`, padding: '3px 8px' }}>
+    <span style={{ ...mono, fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: C.muted, border: `1px solid ${C.ruleStrong}`, borderRadius: 'var(--radius-sm)', padding: '3px 9px' }}>
       Draft
     </span>
   );
   if (state === 'open') return (
-    <span style={{ ...mono, fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: C.clear, border: `1px solid ${C.clear}`, padding: '3px 8px', background: C.clearWash }}>
+    <span style={{ ...mono, fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: C.clear, border: `1px solid ${C.clear}`, borderRadius: 'var(--radius-sm)', padding: '3px 9px', background: C.clearWash }}>
       Open
     </span>
   );
   if (state === 'closed') return (
-    <span style={{ ...mono, fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: C.block, border: `1px solid ${C.block}`, padding: '3px 8px', background: C.blockWash }}>
+    <span style={{ ...mono, fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: C.block, border: `1px solid ${C.block}`, borderRadius: 'var(--radius-sm)', padding: '3px 9px', background: C.blockWash }}>
       Closed
     </span>
   );
@@ -81,7 +80,7 @@ function FileCard({ file }: { file: GithubFileDiff }) {
   const diffLines = file.patch ? parseDiff(file.patch) : null;
 
   return (
-    <div style={{ border: `1px solid ${C.ruleStrong}`, marginBottom: -1 }}>
+    <div className="ui-card" style={{ overflow: 'hidden', marginBottom: 10, borderRadius: 'var(--radius)' }}>
       {/* File header row */}
       <button
         onClick={() => setOpen(o => !o)}
@@ -90,8 +89,8 @@ function FileCard({ file }: { file: GithubFileDiff }) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '10px 16px',
-          background: open ? '#F2F5FA' : C.chart,
+          padding: '12px 16px',
+          background: open ? C.plexWash : C.chart,
           border: 'none',
           cursor: file.patch ? 'pointer' : 'default',
           textAlign: 'left' as const,
@@ -99,18 +98,18 @@ function FileCard({ file }: { file: GithubFileDiff }) {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-          <span style={{ ...mono, fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: statusColor, border: `1px solid ${statusColor}`, padding: '1px 5px', flexShrink: 0 }}>
+          <span className="mono" style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: statusColor, border: `1px solid ${statusColor}`, borderRadius: 'var(--radius-sm)', padding: '2px 6px', flexShrink: 0 }}>
             {file.status === 'added' ? 'new' : file.status === 'removed' ? 'del' : file.status === 'renamed' ? 'ren' : 'mod'}
           </span>
-          <span style={{ ...mono, fontSize: 12.5, color: C.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+          <span className="mono" style={{ fontSize: 12.5, color: C.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
             {file.filename}
           </span>
         </div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexShrink: 0 }}>
-          {file.additions > 0 && <span style={{ ...mono, fontSize: 12, color: C.clear }}>+{file.additions}</span>}
-          {file.deletions > 0 && <span style={{ ...mono, fontSize: 12, color: C.block }}>−{file.deletions}</span>}
+          {file.additions > 0 && <span className="mono" style={{ fontSize: 12, color: C.clear }}>+{file.additions}</span>}
+          {file.deletions > 0 && <span className="mono" style={{ fontSize: 12, color: C.block }}>−{file.deletions}</span>}
           {file.patch && (
-            <span style={{ ...mono, fontSize: 11, color: C.muted }}>{open ? '▲' : '▼'}</span>
+            <span className="mono" style={{ fontSize: 11, color: C.muted }}>{open ? '▲' : '▼'}</span>
           )}
         </div>
       </button>
@@ -148,16 +147,15 @@ function FileCard({ file }: { file: GithubFileDiff }) {
 
 
 function GraphifyBlastPanel({ ctx, repo }: { ctx: GraphifyContextResponse; repo: string }) {
-  // console.log("ctc",ctx)
   const layout = ctx.indexed ? buildGraphLayout(ctx) : null;
   return (
-    <div style={{ marginTop: 24, border: `1px solid ${graphC.ruleStrong}`, background: graphC.chart }}>
+    <div className="ui-card" style={{ marginTop: 8, overflow: 'hidden' }}>
       {/* Header */}
       <div style={{ padding: '14px 20px', borderBottom: `1px solid ${graphC.rule}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' as const }}>
         <div style={{ ...mono, fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: graphC.plex }}>
           Graphify — blast radius &amp; dependency graph
         </div>
-        <div style={{ ...mono, fontSize: 10, color: ctx.indexed ? graphC.clear : graphC.caution, border: `1px dashed ${ctx.indexed ? graphC.clear : graphC.caution}`, padding: '2px 7px', background: ctx.indexed ? graphC.clearWash : graphC.cautionWash }}>
+        <div style={{ ...mono, fontSize: 10, color: ctx.indexed ? graphC.clear : graphC.caution, border: `1px dashed ${ctx.indexed ? graphC.clear : graphC.caution}`, borderRadius: 'var(--radius-sm)', padding: '3px 8px', background: ctx.indexed ? graphC.clearWash : graphC.cautionWash }}>
           {ctx.indexed ? 'Files found in graph' : 'Repo not indexed by Graphify'}
         </div>
       </div>
@@ -175,7 +173,7 @@ function GraphifyBlastPanel({ ctx, repo }: { ctx: GraphifyContextResponse; repo:
               ].map(s => (
                 <div key={s.label}>
                   <div style={{ ...mono, fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: graphC.muted, marginBottom: 3 }}>{s.label}</div>
-                  <div style={{ fontFamily: '"IBM Plex Sans Condensed", sans-serif', fontWeight: 700, fontSize: 26, lineHeight: 1, color: graphC.plex }}>{s.value}</div>
+                  <div style={{ ...display, fontSize: 26, lineHeight: 1, color: graphC.plex }}>{s.value}</div>
                 </div>
               ))}
             </div>
@@ -188,7 +186,7 @@ function GraphifyBlastPanel({ ctx, repo }: { ctx: GraphifyContextResponse; repo:
               {ctx.changedNodes.length} symbols across {layout?.changedFiles.length ?? 0} changed files reach {ctx.neighbours.length} direct connections across {layout?.neighbourFiles.length ?? 0} dependency files (capped to the most-connected).
             </div>
 
-            <div style={{ border: `1px solid ${graphC.rule}`, background: graphC.chart, padding: 8 }}>
+            <div style={{ border: `1px solid ${graphC.rule}`, background: graphC.chart, borderRadius: 'var(--radius)', padding: 8 }}>
               <GraphifyNetwork ctx={ctx} />
             </div>
 
@@ -198,14 +196,14 @@ function GraphifyBlastPanel({ ctx, repo }: { ctx: GraphifyContextResponse; repo:
                 <div style={{ fontSize: 12, color: graphC.muted, marginBottom: 8, fontWeight: 600, ...mono, letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>Communities touched</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
                   {ctx.touchedCommunities.map(c => (
-                    <span key={c} style={{ ...mono, fontSize: 11, color: graphC.plex, background: graphC.plexWash, padding: '3px 8px' }}>{c}</span>
+                    <span key={c} style={{ ...mono, fontSize: 11, color: graphC.plex, background: graphC.plexWash, borderRadius: 'var(--radius-sm)', padding: '3px 9px' }}>{c}</span>
                   ))}
                 </div>
               </div>
             )}
           </>
         ) : (
-          <div style={{ background: graphC.cautionWash, border: `1px solid ${graphC.ruleStrong}`, borderLeft: `4px solid ${graphC.caution}`, padding: '16px 18px' }}>
+          <div style={{ background: graphC.cautionWash, border: `1px solid ${graphC.ruleStrong}`, borderLeft: `4px solid ${graphC.caution}`, borderRadius: 'var(--radius)', padding: '16px 18px' }}>
             <div style={{ ...mono, fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: graphC.caution, marginBottom: 8 }}>
               {repo} is not in the Graphify graph snapshot
             </div>
@@ -286,81 +284,52 @@ export default function PRDetailPage() {
     }, 0);
     return () => clearTimeout(t);
   }, [pr]);
+
   // Store context in sessionStorage so /investigation can read it
   function handleAnalyze() {
-  if (!pr) return;
+    if (!pr) return;
 
+    const context = {
+      id: `gh-${repo}-${pr.number}`,
+      number: pr.number,
+      title: pr.title,
+      author: pr.author,
+      branch: pr.branch,
+      baseBranch: pr.baseBranch,
+      repo,
+      description: pr.body ?? '',
+      filesChanged: pr.files.map((f) => ({
+        path: f.filename,
+        additions: f.additions,
+        deletions: f.deletions,
+        diff: f.patch ?? '',
+      })),
+      createdAt: pr.createdAt,
+    };
 
-  const context = {
-    id: `gh-${repo}-${pr.number}`,
-    number: pr.number,
-    title: pr.title,
-    author: pr.author,
-    branch: pr.branch,
-    baseBranch: pr.baseBranch,
-    repo,
-    description: pr.body ?? '',
-    filesChanged: pr.files.map((f) => ({
-      path: f.filename,
-      additions: f.additions,
-      deletions: f.deletions,
-      diff: f.patch ?? '',
-    })),
-    createdAt: pr.createdAt,
-  };
-
-  // console.log("context", context);
-
-  try {
-    const serialized = JSON.stringify(context);
-
-    // console.log("serialized:", serialized);
-    // console.log("sessionStorage:", sessionStorage);
-
-    sessionStorage.setItem(
-      'pr-doctor:pr-context',
-      serialized
-    );
-
-    // console.log(
-    //   "AFTER SET:",
-    //   sessionStorage.getItem('pr-doctor:pr-context')
-    // );
-
-    sessionStorage.removeItem('pr-doctor:investigation');
-
-    // console.log(
-    //   "AFTER REMOVE:",
-    //   sessionStorage.getItem('pr-doctor:investigation')
-    // );
-
-    router.push('/investigation');
-  } catch (error) {
-    console.error("SESSION STORAGE ERROR:", error);
+    try {
+      sessionStorage.setItem('pr-doctor:pr-context', JSON.stringify(context));
+      sessionStorage.removeItem('pr-doctor:investigation');
+      router.push('/investigation');
+    } catch (error) {
+      console.error('SESSION STORAGE ERROR:', error);
+    }
   }
-}
 
   const visibleFiles = pr
     ? (showAll ? pr.files : pr.files.slice(0, 10))
     : [];
 
   return (
-    <div style={{ background: C.bg, minHeight: '100vh', fontFamily: '"IBM Plex Sans", system-ui, sans-serif', color: C.ink }}>
+    <Shell maxW={1060}>
+      <div style={{ paddingTop: 28 }}>
 
-      {/* Nav */}
-      <header style={{ background: C.chart, borderBottom: `1px solid ${C.ruleStrong}`, padding: '0 24px' }}>
-        <div style={{ maxWidth: 1060, margin: '0 auto', height: 52, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Link href="/" style={{ ...mono, fontSize: 13, fontWeight: 600, letterSpacing: '0.04em', color: C.plex, textDecoration: 'none' }}>
-            PR Doctor
-          </Link>
+        {/* Breadcrumb */}
+        <div className="mono" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' as const, fontSize: 12, marginBottom: 16 }}>
+          <Link href="/pulls" style={{ color: C.muted, textDecoration: 'none' }}>{repo}</Link>
           <span style={{ color: C.ruleStrong }}>›</span>
-          <Link href="/pulls" style={{ ...mono, fontSize: 12, color: C.muted, textDecoration: 'none' }}>{repo}</Link>
-          <span style={{ color: C.ruleStrong }}>›</span>
-          <span style={{ ...mono, fontSize: 12, color: C.ink }}>#{number}</span>
+          <span style={{ color: C.ink }}>#{number}</span>
         </div>
-      </header>
-
-      <div style={{ maxWidth: 1060, margin: '32px auto 0', padding: '0 24px 80px' }}>
 
         {loading && (
           <div style={{ padding: '60px 0', textAlign: 'center', ...mono, fontSize: 13, color: C.muted }}>
@@ -375,18 +344,18 @@ export default function PRDetailPage() {
         {!loading && !error && pr && (
           <>
             {/* ── Header card ─────────────────────────────────────── */}
-            <div style={{ background: C.chart, border: `1px solid ${C.ruleStrong}`, marginBottom: 1 }}>
-              <div style={{ padding: '22px 26px 18px', borderBottom: `1px solid ${C.rule}` }}>
+            <div className="ui-card" style={{ overflow: 'hidden' }}>
+              <div style={{ padding: 'clamp(18px, 3vw, 24px) clamp(18px, 3vw, 26px) 18px', borderBottom: `1px solid ${C.rule}` }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' as const }}>
                   <StatusPill state={pr.state} draft={pr.draft} />
                   <Eyebrow>#{pr.number}</Eyebrow>
                   {pr.labels.map(l => (
-                    <span key={l} style={{ ...mono, fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase' as const, color: C.plex, background: C.plexWash, padding: '2px 7px' }}>
+                    <span key={l} className="mono" style={{ fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase' as const, color: C.plex, background: C.plexWash, borderRadius: 'var(--radius-sm)', padding: '2px 8px' }}>
                       {l}
                     </span>
                   ))}
                 </div>
-                <h1 style={{ fontFamily: '"IBM Plex Sans Condensed", sans-serif', fontWeight: 700, fontSize: 26, margin: '0 0 12px', lineHeight: 1.15 }}>
+                <h1 className="display" style={{ fontSize: 'clamp(20px, 3vw, 28px)', margin: '0 0 12px', lineHeight: 1.15, color: C.ink }}>
                   {pr.title}
                 </h1>
                 <div style={{ display: 'flex', gap: '8px 20px', flexWrap: 'wrap' as const, ...mono, fontSize: 12, color: C.muted }}>
@@ -400,17 +369,18 @@ export default function PRDetailPage() {
               </div>
 
               {/* Stats row */}
-              <div style={{ padding: '12px 26px', display: 'flex', gap: 24, flexWrap: 'wrap' as const, alignItems: 'center', borderBottom: `1px solid ${C.rule}` }}>
-                <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                  <span style={{ ...mono, fontSize: 13, color: C.clear }}>+{pr.additions} additions</span>
-                  <span style={{ ...mono, fontSize: 13, color: C.block }}>−{pr.deletions} deletions</span>
-                  <span style={{ ...mono, fontSize: 13, color: C.muted }}>{pr.changedFiles} file{pr.changedFiles !== 1 ? 's' : ''} changed</span>
+              <div style={{ padding: '12px 26px', display: 'flex', gap: 24, flexWrap: 'wrap' as const, alignItems: 'center', borderBottom: `1px solid ${C.rule}`, background: '#FAFBFC' }}>
+                <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' as const }}>
+                  <span className="mono" style={{ fontSize: 13, color: C.clear }}>+{pr.additions} additions</span>
+                  <span className="mono" style={{ fontSize: 13, color: C.block }}>−{pr.deletions} deletions</span>
+                  <span className="mono" style={{ fontSize: 13, color: C.muted }}>{pr.changedFiles} file{pr.changedFiles !== 1 ? 's' : ''} changed</span>
                 </div>
                 <a
                   href={pr.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ ...mono, fontSize: 12, color: C.plex, textDecoration: 'none', marginLeft: 'auto', letterSpacing: '0.04em' }}
+                  className="mono"
+                  style={{ fontSize: 12, color: C.plex, textDecoration: 'none', marginLeft: 'auto', letterSpacing: '0.04em' }}
                 >
                   View on GitHub ↗
                 </a>
@@ -427,7 +397,7 @@ export default function PRDetailPage() {
               )}
 
               {/* Analyze CTA */}
-              <div style={{ padding: '16px 26px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' as const, gap: 12 }}>
+              <div style={{ padding: '18px 26px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' as const, gap: 12, background: 'var(--plex-wash)' }}>
                 <div>
                   <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 3 }}>Run PR Doctor analysis</div>
                   <div style={{ fontSize: 13, color: C.muted }}>
@@ -436,17 +406,20 @@ export default function PRDetailPage() {
                 </div>
                 <button
                   onClick={() => handleAnalyze()}
+                  className="btn-hover"
                   style={{
-                    background: C.plex,
+                    background: C.ink,
                     color: '#FFFFFF',
                     border: 'none',
                     padding: '12px 32px',
+                    borderRadius: 'var(--radius-sm)',
                     ...mono,
                     fontSize: 13,
                     fontWeight: 600,
                     letterSpacing: '0.04em',
                     cursor: 'pointer',
                     whiteSpace: 'nowrap' as const,
+                    boxShadow: 'var(--shadow-md)',
                   }}
                 >
                   Analyze this PR →
@@ -461,7 +434,8 @@ export default function PRDetailPage() {
                 {pr.files.length > 10 && (
                   <button
                     onClick={() => setShowAll(s => !s)}
-                    style={{ ...mono, fontSize: 11, color: C.plex, background: 'none', border: 'none', cursor: 'pointer', letterSpacing: '0.06em' }}
+                    className="mono"
+                    style={{ fontSize: 11, color: C.plex, background: 'none', border: 'none', cursor: 'pointer', letterSpacing: '0.06em' }}
                   >
                     {showAll ? 'Show fewer' : `Show all ${pr.files.length} files`}
                   </button>
@@ -475,7 +449,7 @@ export default function PRDetailPage() {
               {!showAll && pr.files.length > 10 && (
                 <div style={{ marginTop: 8, ...mono, fontSize: 12, color: C.muted }}>
                   Showing 10 of {pr.files.length} files.{' '}
-                  <button onClick={() => setShowAll(true)} style={{ ...mono, fontSize: 12, color: C.plex, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                  <button onClick={() => setShowAll(true)} className="mono" style={{ fontSize: 12, color: C.plex, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
                     Show all
                   </button>
                 </div>
@@ -483,12 +457,13 @@ export default function PRDetailPage() {
             </div>
 
             {/* Graphify blast-radius panel (only after context loads) */}
-            {graphCtx && <GraphifyBlastPanel ctx={graphCtx} repo={repo} />}
+            <div style={{ marginBottom: 80 }}>
+              {graphCtx && <GraphifyBlastPanel ctx={graphCtx} repo={repo} />}
+            </div>
           </>
         )}
 
-
       </div>
-    </div>
+    </Shell>
   );
 }

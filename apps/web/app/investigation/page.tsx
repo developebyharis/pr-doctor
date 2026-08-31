@@ -6,6 +6,7 @@ import type { AgentId, AgentStatus, BlastRadius, FinalVerdict, Finding, PRContex
 import { allFindings } from '@/lib/types';
 import type { GraphifyContextResponse } from '@/app/api/graphify/route';
 import { GraphifyNetwork, graphC } from '@/app/components/GraphifyNetwork';
+import { Shell } from '@/app/components/ui';
 
 interface JobProgress {
   agent: AgentId;
@@ -42,16 +43,16 @@ const AGENT_META: Record<AgentId, { displayName: string; mode: string }> = {
 const LANE_AGENTS: AgentId[] = ['code-analyst', 'test-security', 'docs-compliance'];
 
 const DECISION_COLOR: Record<string, string> = {
-  BLOCK:      '#B3261E',
-  NEEDS_WORK: '#8A5A00',
-  MERGE:      '#1F6B45',
+  BLOCK:      '#B4232A',
+  NEEDS_WORK: '#9A6A00',
+  MERGE:      '#157A5B',
 };
 
 const SEV_STYLE: Record<Severity, { color: string; borderColor: string; background: string }> = {
-  critical: { color: '#B3261E', borderColor: '#B3261E', background: '#FBEDEC' },
-  high:     { color: '#B3261E', borderColor: '#B3261E', background: 'transparent' },
-  medium:   { color: '#8A5A00', borderColor: '#8A5A00', background: 'transparent' },
-  low:      { color: '#68757F', borderColor: '#AEB8C0', background: 'transparent' },
+  critical: { color: '#B4232A', borderColor: '#B4232A', background: '#FBEFEF' },
+  high:     { color: '#B4232A', borderColor: '#B4232A', background: 'transparent' },
+  medium:   { color: '#9A6A00', borderColor: '#9A6A00', background: 'transparent' },
+  low:      { color: '#6B7280', borderColor: '#D4D4D1', background: 'transparent' },
 };
 
 function SeverityPill({ sev }: { sev: Severity }) {
@@ -85,13 +86,13 @@ function FindingRow({ f, agentLabel, jobId }: { f: Finding; agentLabel: string; 
         gap: 16,
         alignItems: 'start',
         padding: '13px 0',
-        borderTop: '1px solid #D2D8DD',
+        borderTop: '1px solid #E7E7E5',
         cursor: 'pointer',
       }}>
         <SeverityPill sev={f.severity} />
         <div>
-          <div style={{ fontWeight: 500, fontSize: 14, color: '#14181C' }}>{f.title}</div>
-          <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12.5, color: '#68757F', marginTop: 2 }}>
+          <div style={{ fontWeight: 500, fontSize: 14, color: '#111113' }}>{f.title}</div>
+          <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12.5, color: '#6B7280', marginTop: 2 }}>
             {f.file}:{f.line}
           </div>
         </div>
@@ -100,8 +101,8 @@ function FindingRow({ f, agentLabel, jobId }: { f: Finding; agentLabel: string; 
           fontSize: 10.5,
           letterSpacing: '0.06em',
           textTransform: 'uppercase',
-          color: '#24408E',
-          background: '#EDF0F8',
+          color: '#4A5568',
+          background: '#F1F3F5',
           padding: '3px 7px',
           whiteSpace: 'nowrap',
           alignSelf: 'start',
@@ -144,7 +145,7 @@ function GraphifyPanel({ files, blastRadius }: { files: string[]; blastRadius: B
   if (!ctx) return null;
 
   return (
-    <div style={{ padding: '20px 26px', borderTop: '1px solid #D2D8DD' }}>
+    <div style={{ padding: '20px 26px', borderTop: '1px solid #E7E7E5' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: graphC.plex }}>
@@ -179,7 +180,7 @@ function GraphifyPanel({ files, blastRadius }: { files: string[]; blastRadius: B
           </div>
 
           {/* How it connects to the agents */}
-          <div style={{ background: graphC.plexWash, border: '1px solid #AEB8C0', borderLeft: '4px solid #24408E', padding: '12px 16px', marginBottom: 20 }}>
+          <div style={{ background: graphC.plexWash, border: '1px solid #D4D4D1', borderLeft: '4px solid #4A5568', padding: '12px 16px', marginBottom: 20 }}>
             <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: graphC.plex, marginBottom: 6 }}>
               How Graphify powers the agents
             </div>
@@ -207,7 +208,7 @@ function GraphifyPanel({ files, blastRadius }: { files: string[]; blastRadius: B
       ) : (
         <>
           {/* Honest indexed status for the PR being analyzed */}
-          <div style={{ background: graphC.cautionWash, border: '1px solid #D2D8DD', borderLeft: '4px solid #8A5A00', padding: '12px 16px', marginBottom: 20 }}>
+          <div style={{ background: graphC.cautionWash, border: '1px solid #E7E7E5', borderLeft: '4px solid #9A6A00', padding: '12px 16px', marginBottom: 20 }}>
             <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: graphC.caution, marginBottom: 6 }}>
               This repo isn&apos;t in the graph snapshot
             </div>
@@ -236,19 +237,19 @@ function GraphifyPanel({ files, blastRadius }: { files: string[]; blastRadius: B
           </div>
 
           {/* How it connects to the agents — the key demo talking point */}
-          <div style={{ background: graphC.plexWash, border: '1px solid #AEB8C0', borderLeft: '4px solid #24408E', padding: '12px 16px', marginBottom: 20 }}>
+          <div style={{ background: graphC.plexWash, border: '1px solid #D4D4D1', borderLeft: '4px solid #4A5568', padding: '12px 16px', marginBottom: 20 }}>
             <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: graphC.plex, marginBottom: 6 }}>
               How Graphify powers the agents
             </div>
             <div style={{ fontSize: 13.5, lineHeight: 1.6, color: graphC.ink }}>
               Before each BOB agent runs, PR Doctor queries this graph for every changed file and extracts the 1-hop
               neighbour subgraph — symbols, call edges, and communities — and injects it directly into the agent prompt.
-              This is why the analysis could pinpoint <code style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, background: '#F6F8F9', border: '1px solid #D2D8DD', padding: '1px 4px' }}>billing/refund.ts:88</code> as{' '}
+              This is why the analysis could pinpoint <code style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, background: '#F6F8F9', border: '1px solid #E7E7E5', padding: '1px 4px' }}>billing/refund.ts:88</code> as{' '}
               the downstream blast radius: the graph told it to look there, not the diff.
             </div>
           </div>
 
-          <div style={{ marginTop: 14, fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, color: graphC.muted, borderTop: '1px solid #D2D8DD', paddingTop: 10 }}>
+          <div style={{ marginTop: 14, fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, color: graphC.muted, borderTop: '1px solid #E7E7E5', paddingTop: 10 }}>
             In production, Graphify runs on the target repo before analysis begins. The context packet is then injected
             into every agent prompt — no agent needs to grep the codebase; the graph does that work upfront.
           </div>
@@ -349,7 +350,7 @@ function RiskGraph({ br }: { br: BlastRadius }) {
             <line
               key={i}
               x1={x1} y1={y1} x2={x2} y2={y2}
-              stroke="#AEB8C0"
+              stroke="#D4D4D1"
               strokeWidth="1.5"
               strokeDasharray={dashed ? '3 3' : undefined}
             />
@@ -363,10 +364,10 @@ function RiskGraph({ br }: { br: BlastRadius }) {
           return (
             <g key="changed">
               <rect x={pos.x} y={pos.y} width={NODE_W} height={NODE_H}
-                fill="#FBEDEC" stroke="#B3261E" strokeWidth="2" />
+                fill="#FBEFEF" stroke="#B4232A" strokeWidth="2" />
               <text x={pos.x + NODE_W / 2} y={pos.y + 16}
                 textAnchor="middle" fontFamily="IBM Plex Mono, monospace"
-                fontSize="12" fontWeight="600" fill="#B3261E">{label}</text>
+                fontSize="12" fontWeight="600" fill="#B4232A">{label}</text>
               <text x={pos.x + NODE_W / 2} y={pos.y + 30}
                 textAnchor="middle" fontFamily="IBM Plex Mono, monospace"
                 fontSize="10" fill="#8C1D18">changed</text>
@@ -388,10 +389,10 @@ function RiskGraph({ br }: { br: BlastRadius }) {
             return (
               <g key={n.path}>
                 <rect x={pos.x} y={pos.y} width={NODE_W} height={NODE_H}
-                  fill="#FBEDEC" stroke="#B3261E" strokeWidth={strokeW} strokeDasharray="5 3" />
+                  fill="#FBEFEF" stroke="#B4232A" strokeWidth={strokeW} strokeDasharray="5 3" />
                 <text x={pos.x + NODE_W / 2} y={pos.y + 16}
                   textAnchor="middle" fontFamily="IBM Plex Mono, monospace"
-                  fontSize="12" fontWeight="600" fill="#B3261E">{label}</text>
+                  fontSize="12" fontWeight="600" fill="#B4232A">{label}</text>
                 <text x={pos.x + NODE_W / 2} y={pos.y + 30}
                   textAnchor="middle" fontFamily="IBM Plex Mono, monospace"
                   fontSize="10" fill="#8C1D18">no coverage</text>
@@ -402,29 +403,29 @@ function RiskGraph({ br }: { br: BlastRadius }) {
           return (
             <g key={n.path}>
               <rect x={pos.x} y={pos.y} width={NODE_W} height={NODE_H}
-                fill="#FFFFFF" stroke="#AEB8C0" strokeWidth={strokeW} />
+                fill="#FFFFFF" stroke="#D4D4D1" strokeWidth={strokeW} />
               <text x={pos.x + NODE_W / 2} y={pos.y + 16}
                 textAnchor="middle" fontFamily="IBM Plex Mono, monospace"
-                fontSize="12" fill="#14181C">{label}</text>
+                fontSize="12" fill="#111113">{label}</text>
               <text x={pos.x + NODE_W / 2} y={pos.y + 30}
                 textAnchor="middle" fontFamily="IBM Plex Mono, monospace"
-                fontSize="10" fill="#68757F">tested</text>
+                fontSize="10" fill="#6B7280">tested</text>
             </g>
           );
         })}
 
         {/* Caption */}
         <text x="0" y={SVG_H - 8}
-          fontFamily="IBM Plex Mono, monospace" fontSize="10.5" fill="#68757F">
+          fontFamily="IBM Plex Mono, monospace" fontSize="10.5" fill="#6B7280">
           {br.affected.length} files reached · {noCoverage} without coverage · graph confidence {confPct}%
         </text>
       </svg>
 
       {/* Legend */}
-      <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginTop: 12, fontSize: 12.5, color: '#68757F' }}>
-        <span><strong style={{ fontWeight: 500, color: '#14181C' }}>Solid red</strong> — changed</span>
-        <span><strong style={{ fontWeight: 500, color: '#14181C' }}>Dashed red</strong> — reached, no tests</span>
-        <span><strong style={{ fontWeight: 500, color: '#14181C' }}>Grey</strong> — reached, covered</span>
+      <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginTop: 12, fontSize: 12.5, color: '#6B7280' }}>
+        <span><strong style={{ fontWeight: 500, color: '#111113' }}>Solid red</strong> — changed</span>
+        <span><strong style={{ fontWeight: 500, color: '#111113' }}>Dashed red</strong> — reached, no tests</span>
+        <span><strong style={{ fontWeight: 500, color: '#111113' }}>Grey</strong> — reached, covered</span>
       </div>
     </div>
   );
@@ -618,11 +619,25 @@ export default function InvestigationPage() {
 
   const visibleFindings: Finding[] = verdict ? allFindings(verdict) : [];
   const isRunning = !verdict && !error && progress.length > 0;
-  const decisionColor = verdict ? (DECISION_COLOR[verdict.decision] ?? '#14181C') : '#14181C';
+  const decisionColor = verdict ? (DECISION_COLOR[verdict.decision] ?? '#111113') : '#111113';
 
   return (
-    <div style={{ background: '#E9ECEF', minHeight: '100vh', fontFamily: '"IBM Plex Sans", system-ui, sans-serif', color: '#14181C', padding: '28px 20px 80px' }}>
+    <Shell>
+      <main style={{ padding: '28px 0 80px' }}>
       <div style={{ maxWidth: 1060, margin: '0 auto' }}>
+
+        {/* Page header */}
+        <div style={{ marginBottom: 18 }}>
+          <div className="eyebrow" style={{ color: 'var(--plex)', marginBottom: 6 }}>Investigation</div>
+          <h1 className="display" style={{ fontSize: 'clamp(24px, 3.4vw, 32px)', margin: 0, lineHeight: 1.1 }}>
+            {verdict?.context.title ?? 'Analyzing a pull request'}
+          </h1>
+          {verdict && (
+            <div className="mono" style={{ fontSize: 13, color: 'var(--muted)', marginTop: 6 }}>
+              {verdict.context.repo} · PR #{verdict.context.number} · {verdict.context.author}
+            </div>
+          )}
+        </div>
 
         {/* Analysis mode chip */}
         <div style={{
@@ -634,9 +649,10 @@ export default function InvestigationPage() {
           fontSize: 11,
           letterSpacing: '0.08em',
           textTransform: 'uppercase',
+          borderRadius: 'var(--radius-sm)',
           ...(verdict?.simulated === false
-            ? { color: '#1F6B45', border: '1px solid #1F6B45', padding: '5px 10px', background: '#E9F2EC' }
-            : { color: '#8A5A00', border: '1px dashed #8A5A00', padding: '5px 10px', background: '#FCF8EF' }
+            ? { color: 'var(--clear)', border: '1px solid var(--clear)', padding: '5px 12px', background: 'var(--clear-wash)' }
+            : { color: 'var(--caution)', border: '1px dashed var(--caution)', padding: '5px 12px', background: 'var(--caution-wash)' }
           ),
         }}>
           {verdict?.simulated === false
@@ -650,14 +666,14 @@ export default function InvestigationPage() {
 
         {/* Live-run fallback note — only when a real analysis degraded to fixture */}
         {analysisError && verdict && (
-          <div style={{ background: '#FCF8EF', border: '1px solid #8A5A00', padding: '12px 20px', marginBottom: 20, fontFamily: '"IBM Plex Mono", monospace', fontSize: 12.5, color: '#8A5A00' }}>
+          <div style={{ background: 'var(--caution-wash)', border: '1px solid var(--caution)', borderRadius: 'var(--radius)', padding: '13px 20px', marginBottom: 20, fontFamily: '"IBM Plex Mono", monospace', fontSize: 12.5, color: 'var(--caution)' }}>
             {analysisError}
           </div>
         )}
 
         {/* Error state */}
         {error && (
-          <div style={{ background: '#FBEDEC', border: '1px solid #B3261E', padding: '14px 20px', marginBottom: 20, fontFamily: '"IBM Plex Mono", monospace', fontSize: 13, color: '#B3261E' }}>
+          <div style={{ background: 'var(--block-wash)', border: '1px solid var(--block)', borderRadius: 'var(--radius)', padding: '14px 20px', marginBottom: 20, fontFamily: '"IBM Plex Mono", monospace', fontSize: 13, color: 'var(--block)' }}>
             {error}
           </div>
         )}
@@ -666,16 +682,19 @@ export default function InvestigationPage() {
         {verdict && (
           <div style={{
             position: 'relative',
-            background: '#FFFFFF',
-            border: '1px solid #AEB8C0',
+            background: 'var(--surface)',
+            border: '1px solid var(--rule)',
             borderLeft: `8px solid ${decisionColor}`,
-            padding: '22px 26px 22px 30px',
+            padding: 'clamp(18px, 3vw, 26px)',
             display: 'grid',
             gridTemplateColumns: 'auto 1fr auto',
             gap: 26,
             alignItems: 'center',
             marginBottom: 0,
-          }}>
+            borderRadius: 'var(--radius)',
+            boxShadow: 'var(--shadow-md)',
+            overflow: 'hidden',
+          }} className="stack-sm">
             <div style={{
               fontFamily: '"IBM Plex Sans Condensed", sans-serif',
               fontWeight: 700,
@@ -690,30 +709,30 @@ export default function InvestigationPage() {
               {verdict.decision}
             </div>
             <div>
-              <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#68757F', marginBottom: 6 }}>
+              <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6B7280', marginBottom: 6 }}>
                 Orchestrator verdict · IBM BOB 2.0
               </div>
               <div style={{ fontSize: 14.5, maxWidth: '48ch' }}>{verdict.rationale}</div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#68757F' }}>Confidence</div>
+              <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6B7280' }}>Confidence</div>
               <div style={{ fontFamily: '"IBM Plex Sans Condensed", sans-serif', fontWeight: 700, fontSize: 34, lineHeight: 1 }}>
                 {Math.round(verdict.confidence * 100)}%
               </div>
-              <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, color: '#68757F' }}>not evidence</div>
+              <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, color: '#6B7280' }}>not evidence</div>
             </div>
           </div>
         )}
 
         {/* Chart body */}
-        <div style={{ background: '#FFFFFF', border: '1px solid #AEB8C0', borderTop: verdict ? 0 : '1px solid #AEB8C0' }}>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow-sm)', overflow: 'hidden', marginTop: 16, padding: 0 }}>
 
           {/* PR identity */}
           {verdict && (
-            <div style={{ padding: '14px 26px', borderBottom: '1px solid #D2D8DD' }}>
+            <div style={{ padding: '14px 26px', borderBottom: '1px solid #E7E7E5' }}>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 22px', alignItems: 'baseline' }}>
                 <span style={{ fontWeight: 600, fontSize: 17 }}>{verdict.context.title}</span>
-                <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 13, color: '#68757F' }}>
+                <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 13, color: '#6B7280' }}>
                   {verdict.context.repo} · PR #{verdict.context.number} · {verdict.context.author}
                 </span>
               </div>
@@ -721,8 +740,8 @@ export default function InvestigationPage() {
           )}
 
           {/* Agent lanes */}
-          <div style={{ padding: '20px 26px', borderBottom: '1px solid #D2D8DD' }}>
-            <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#68757F', marginBottom: 14 }}>
+          <div style={{ padding: '20px 26px', borderBottom: '1px solid #E7E7E5' }}>
+            <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6B7280', marginBottom: 14 }}>
               Specialists — parallel investigation
             </div>
 
@@ -737,33 +756,33 @@ export default function InvestigationPage() {
                 : 0;
 
               return (
-                <div key={agentId} style={{ display: 'grid', gridTemplateColumns: '190px 1fr 78px', gap: 14, alignItems: 'center', padding: '7px 0' }}>
+                <div key={agentId} className="stack-sm" style={{ display: 'grid', gridTemplateColumns: '190px 1fr 78px', gap: 14, alignItems: 'center', padding: '7px 0' }}>
                   <div style={{ fontWeight: 500, fontSize: 14 }}>
                     {meta.displayName}
-                    <span style={{ display: 'block', fontFamily: '"IBM Plex Mono", monospace', fontSize: 10.5, color: '#24408E', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                    <span style={{ display: 'block', fontFamily: '"IBM Plex Mono", monospace', fontSize: 10.5, color: '#4A5568', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                       {meta.mode}
                     </span>
                   </div>
-                  <div style={{ position: 'relative', height: 12, background: '#F1F3F5', border: '1px solid #D2D8DD' }}>
+                  <div style={{ position: 'relative', height: 12, background: '#F1F3F5', border: '1px solid #E7E7E5' }}>
                     <div style={{
                       position: 'absolute',
                       top: 0,
                       bottom: 0,
-                      background: '#24408E',
+                      background: '#4A5568',
                       opacity: 0.85,
                       width: `${width}%`,
                       transition: status === 'running' ? 'none' : 'width 0.9s cubic-bezier(.2,.7,.3,1)',
                     }} />
                   </div>
-                  <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, color: '#68757F', textAlign: 'right' }}>
+                  <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, color: '#6B7280', textAlign: 'right' }}>
                     {status === 'pending' && '—'}
                     {status === 'running' && (
-                      <span style={{ color: '#24408E' }}>running</span>
+                      <span style={{ color: '#4A5568' }}>running</span>
                     )}
                     {status === 'complete' && prog && (
                       <span>
                         {(prog.durationMs / 1000).toFixed(1)}s
-                        {findingCount > 0 && <span style={{ display: 'block', color: '#B3261E' }}>{findingCount} findings</span>}
+                        {findingCount > 0 && <span style={{ display: 'block', color: '#B4232A' }}>{findingCount} findings</span>}
                       </span>
                     )}
                   </div>
@@ -778,27 +797,27 @@ export default function InvestigationPage() {
               const orchStatus: AgentStatus = orchProg?.status ?? 'pending';
               const orchWidth = barWidths['orchestrator'] ?? 0;
               return (
-                <div style={{ display: 'grid', gridTemplateColumns: '190px 1fr 78px', gap: 14, alignItems: 'center', padding: '7px 0', borderTop: '1px solid #D2D8DD', marginTop: 6 }}>
+                <div className="stack-sm" style={{ display: 'grid', gridTemplateColumns: '190px 1fr 78px', gap: 14, alignItems: 'center', padding: '7px 0', borderTop: '1px solid #E7E7E5', marginTop: 6 }}>
                   <div style={{ fontWeight: 500, fontSize: 14 }}>
                     {orchMeta.displayName}
-                    <span style={{ display: 'block', fontFamily: '"IBM Plex Mono", monospace', fontSize: 10.5, color: '#24408E', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                    <span style={{ display: 'block', fontFamily: '"IBM Plex Mono", monospace', fontSize: 10.5, color: '#4A5568', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                       {orchMeta.mode}
                     </span>
                   </div>
-                  <div style={{ position: 'relative', height: 12, background: '#F1F3F5', border: '1px solid #D2D8DD' }}>
+                  <div style={{ position: 'relative', height: 12, background: '#F1F3F5', border: '1px solid #E7E7E5' }}>
                     <div style={{
                       position: 'absolute',
                       top: 0,
                       bottom: 0,
-                      background: '#14181C',
+                      background: '#111113',
                       opacity: 0.85,
                       width: `${orchWidth}%`,
                       transition: orchStatus === 'running' ? 'none' : 'width 0.9s cubic-bezier(.2,.7,.3,1)',
                     }} />
                   </div>
-                  <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, color: '#68757F', textAlign: 'right' }}>
+                  <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, color: '#6B7280', textAlign: 'right' }}>
                     {orchStatus === 'pending' && '—'}
-                    {orchStatus === 'running' && <span style={{ color: '#24408E' }}>running</span>}
+                    {orchStatus === 'running' && <span style={{ color: '#4A5568' }}>running</span>}
                     {orchStatus === 'complete' && orchProg && `${(orchProg.durationMs / 1000).toFixed(1)}s`}
                   </div>
                 </div>
@@ -811,7 +830,7 @@ export default function InvestigationPage() {
               to show a progressive reveal that doesn't exist. */}
           {(verdict || isRunning) && (
             <div style={{ padding: '20px 26px' }}>
-              <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#68757F', marginBottom: 4 }}>
+              <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6B7280', marginBottom: 4 }}>
                 {verdict
                   ? `Findings — ${visibleFindings.length} total, highest severity first`
                   : 'Findings — investigating…'}
@@ -825,7 +844,7 @@ export default function InvestigationPage() {
                 );
               })}
               {!verdict && (
-                <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, color: '#68757F', padding: '10px 0' }}>
+                <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, color: '#6B7280', padding: '10px 0' }}>
                   Findings will appear once every specialist and the orchestrator have finished.
                 </div>
               )}
@@ -834,7 +853,7 @@ export default function InvestigationPage() {
 
           {/* Loading state — no data yet */}
           {!verdict && progress.length === 0 && !error && (
-            <div style={{ padding: '32px 26px', fontFamily: '"IBM Plex Mono", monospace', fontSize: 13, color: '#68757F' }}>
+            <div style={{ padding: '32px 26px', fontFamily: '"IBM Plex Mono", monospace', fontSize: 13, color: '#6B7280' }}>
               Starting investigation…
             </div>
           )}
@@ -847,12 +866,13 @@ export default function InvestigationPage() {
 
         {/* Back link */}
         <div style={{ marginTop: 20 }}>
-          <Link href="/" style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, color: '#68757F', textDecoration: 'none', letterSpacing: '0.04em' }}>
+          <Link href="/" style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, color: '#6B7280', textDecoration: 'none', letterSpacing: '0.04em' }}>
             &larr; Back
           </Link>
         </div>
 
       </div>
-    </div>
+      </main>
+    </Shell>
   );
 }

@@ -29,9 +29,6 @@ async function main(): Promise<void> {
       const record = await ingestPr(prNumber, settings);
       upsertPr(record, settings);
       // console.log(`✓  Risk: ${record.overall_risk}  |  Heuristics: ${record.risk_heuristics.length}`);
-      for (const h of record.risk_heuristics) {
-        // console.log(`   [${h.level}] ${h.rule}: ${h.description}`);
-      }
       break;
     }
 

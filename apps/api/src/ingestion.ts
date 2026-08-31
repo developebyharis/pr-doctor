@@ -98,6 +98,10 @@ function ghItemFromPull(pr: GhPull, repo: string): GithubPrItem {
 /**
  * Live, paginated list of open PRs fetched from GitHub with the provided token.
  * Used by the web app to preserve "10 per page + Load More" behavior.
+ *
+ * GitHub's pulls-list and search endpoints do not include diff stats
+ * (additions/deletions/changed_files) — only the single-PR endpoint does. So we
+ * list the page, then enrich each PR's stats with one detail request per PR.
  */
 export async function listLivePrs(
   token: string,
@@ -110,7 +114,21 @@ export async function listLivePrs(
     token,
     `/repos/${owner}/${repo}/pulls?state=open&sort=updated&direction=desc&page=${page}&per_page=${perPage}`,
   )) as GhPull[];
-  return pulls.map((pr) => ghItemFromPull(pr, `${owner}/${repo}`));
+
+  const items = await Promise.all(
+    pulls.map(async (pr) => {
+      try {
+        const detail = (await ghFetch(
+          token,
+          `/repos/${owner}/${repo}/pulls/${pr.number}`,
+        )) as GhPull;
+        return ghItemFromPull(detail, `${owner}/${repo}`);
+      } catch {
+        return ghItemFromPull(pr, `${owner}/${repo}`);
+      }
+    }),
+  );
+  return items;
 }
 
 /**
