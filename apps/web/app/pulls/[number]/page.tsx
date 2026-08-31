@@ -8,6 +8,7 @@ import type { GraphifyContextResponse } from '@/app/api/graphify/route';
 import { readRepo, readToken } from '@/lib/token-store';
 import { GraphifyNetwork, graphC, buildGraphLayout } from '@/app/components/GraphifyNetwork';
 import { Shell, mono, display } from '@/app/components/ui';
+import { LoadingBlock, ErrorBlock } from '@/app/components/ui';
 
 const C = {
   bg: '#F6F6F5',
@@ -332,13 +333,20 @@ export default function PRDetailPage() {
         </div>
 
         {loading && (
-          <div style={{ padding: '60px 0', textAlign: 'center', ...mono, fontSize: 13, color: C.muted }}>
-            Loading PR #{number}…
-          </div>
+          <LoadingBlock
+            label={`Loading PR #${number}…`}
+            sub="Fetching the diff, changed files, and Graphify blast-radius context."
+            minHeight={240}
+          />
         )}
 
         {!loading && error && (
-          <div style={{ padding: '24px', ...mono, fontSize: 13, color: C.block }}>{error}</div>
+          <ErrorBlock
+            title="Couldn't load this pull request"
+            message={error}
+            detail="The GitHub API or the ingestion service may be unreachable, or this PR number doesn't exist in the connected repo."
+            onRetry={() => { if (token && repo) fetchDetail(token, repo); }}
+          />
         )}
 
         {!loading && !error && pr && (

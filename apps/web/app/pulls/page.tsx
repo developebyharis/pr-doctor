@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { GithubPRItem } from '@/app/api/github/direct-prs/route';
 import { clearToken, readRepo, readToken } from '@/lib/token-store';
-import { Shell, mono } from '@/app/components/ui';
+import { Shell, mono, LoadingBlock, ErrorBlock, EmptyBlock } from '@/app/components/ui';
 
 const PER_PAGE = 10;
 
@@ -200,19 +200,26 @@ export default function PullsPage() {
           </div>
 
           {loading && (
-            <div style={{ padding: '44px 24px', textAlign: 'center', ...mono, fontSize: 13, color: 'var(--muted)' }}>
-              Loading pull requests…
-            </div>
+            <LoadingBlock label={`Fetching PRs from ${displayRepo}…`} sub="Reading the GitHub API via the ingestion service. Paginated — first page shown." />
           )}
 
           {!loading && error && (
-            <div style={{ padding: '24px', ...mono, fontSize: 13, color: 'var(--block)' }}>{error}</div>
+            <ErrorBlock
+              title="Couldn't load pull requests"
+              message={error}
+              detail={`The request to ${displayRepo || 'this repo'} failed. The GitHub API or the ingestion service may be unreachable.`}
+              onRetry={() => { if (token && repo) { setPage(1); fetchPage(token, repo, 1, false); } }}
+            />
           )}
 
           {!loading && !error && prs.length === 0 && (
-            <div style={{ padding: '44px 24px', textAlign: 'center', ...mono, fontSize: 13, color: 'var(--muted)' }}>
-              No open pull requests found in <strong>{displayRepo}</strong>.
-            </div>
+            <EmptyBlock
+              label="No open pull requests"
+              hint={`There are no open pull requests in ${displayRepo || 'this repository'}. Open a PR or check a different repository.`}
+              actionLabel={token && repo ? 'Refresh' : 'Connect GitHub'}
+              actionHref={token && repo ? undefined : '/connect'}
+              onAction={token && repo ? () => { setPage(1); fetchPage(token as string, repo, 1, false); } : undefined}
+            />
           )}
 
           {!loading && !error && prs.map(pr => (

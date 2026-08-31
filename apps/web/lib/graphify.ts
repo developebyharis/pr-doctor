@@ -33,8 +33,8 @@ let _graph: GraphFile | null = null;
 
 function loadGraph(): GraphFile {
   if (_graph) return _graph;
-  // Statically scoped to an in-app path so Turbopack can trace it. The graph
-  // itself is the synced copy of packages/graphify-out/graph.json.
+  // Statically scoped to an in-app path so Turbopack can trace it. This is the
+  // committed knowledge-graph snapshot (nodes + edges).
   const graphPath = join(process.cwd(), 'fixtures', 'graphify-graph.json');
   const raw = readFileSync(graphPath, 'utf8');
   _graph = JSON.parse(raw) as GraphFile;

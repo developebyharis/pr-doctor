@@ -131,6 +131,108 @@ export function SectionHeading({
   );
 }
 
+/* ── Async state blocks: loading / error / empty / info ─────────────────── */
+
+function Spinner({
+  size = 22, color = 'var(--plex)', track = 'var(--rule-strong)',
+}: { size?: number; color?: string; track?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ animation: 'pd-spin .8s linear infinite' }} aria-hidden>
+      <circle cx="12" cy="12" r="9.5" stroke={track} strokeWidth="2" opacity="0.5" />
+      <path d="M12 2.5a9.5 9.5 0 0 1 9.4 8" stroke={color} strokeWidth="2.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** Centered full-width loading block with an optional label. */
+export function LoadingBlock({ label = 'Loading…', sub, minHeight = 180 }: { label?: string; sub?: string; minHeight?: number }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '36px 24px', minHeight }}>
+      <Spinner />
+      <div className="mono" style={{ fontSize: 13, color: 'var(--muted)' }}>{label}</div>
+      {sub && <div className="mono" style={{ fontSize: 11.5, color: 'var(--faint)', textAlign: 'center', maxWidth: 420, lineHeight: 1.6 }}>{sub}</div>}
+    </div>
+  );
+}
+
+/** Inline loading row (for small slots like buttons / list rows). */
+export function LoadingRow({ label = 'Loading…', showSpinner = true }: { label?: string; showSpinner?: boolean }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, ...mono, fontSize: 13, color: 'var(--muted)' }}>
+      {showSpinner && <Spinner size={16} />}
+      <span>{label}</span>
+    </div>
+  );
+}
+
+/** Full-width error block with an optional retry action. */
+export function ErrorBlock({
+  message, detail, onRetry, retryLabel = 'Try again', title = 'Something went wrong',
+}: { message?: string; detail?: string; onRetry?: () => void; retryLabel?: string; title?: string }) {
+  return (
+    <div style={{ border: '1px solid var(--rule-strong)', borderLeft: '4px solid var(--block)', borderRadius: 'var(--radius)', background: 'var(--block-wash)', padding: '22px 24px', margin: '8px 0' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--block)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }} aria-hidden>
+          <circle cx="12" cy="12" r="9.5" />
+          <path d="M12 7.5v5" />
+          <path d="M12 16.2h.01" />
+        </svg>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="mono" style={{ fontSize: 13, fontWeight: 600, color: 'var(--block)', marginBottom: 4 }}>{title}</div>
+          <div style={{ fontSize: 13.5, color: 'var(--ink)', lineHeight: 1.55 }}>{message ?? 'The request could not be completed.'}</div>
+          {detail && <div className="mono" style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 6, lineHeight: 1.5 }}>{detail}</div>}
+          {onRetry && (
+            <button onClick={onRetry} className="btn-hover" style={{ marginTop: 14, fontFamily: '"IBM Plex Mono", monospace', fontWeight: 600, fontSize: 12, letterSpacing: '0.03em', color: '#fff', background: 'var(--block)', border: 'none', borderRadius: 'var(--radius-sm)', padding: '9px 18px', cursor: 'pointer' }}>
+              ↻ {retryLabel}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Full-width empty / no-data block with an optional action link. */
+export function EmptyBlock({
+  label, hint, actionLabel, actionHref, onAction,
+}: { label: string; hint?: string; actionLabel?: string; actionHref?: string; onAction?: () => void }) {
+  const action = actionHref
+    ? <Link href={actionHref} className="btn-hover" style={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 600, fontSize: 12, letterSpacing: '0.03em', color: '#fff', background: 'var(--ink)', textDecoration: 'none', borderRadius: 'var(--radius-sm)', padding: '9px 18px' }}>{actionLabel}</Link>
+    : onAction
+      ? <button onClick={onAction} className="btn-hover" style={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 600, fontSize: 12, letterSpacing: '0.03em', color: '#fff', background: 'var(--ink)', border: 'none', borderRadius: 'var(--radius-sm)', padding: '9px 18px', cursor: 'pointer' }}>{actionLabel}</button>
+      : null;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 10, padding: '52px 24px', border: '1px dashed var(--rule-strong)', borderRadius: 'var(--radius)', margin: '8px 0' }}>
+      <div style={{ width: 44, height: 44, borderRadius: 'var(--radius-sm)', background: 'var(--plex-wash)', color: 'var(--plex)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M21 12a9 9 0 1 1-9-9" />
+          <path d="M21 3v6h-6" />
+        </svg>
+      </div>
+      <div className="mono" style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)' }}>{label}</div>
+      {hint && <div style={{ fontSize: 13, color: 'var(--muted)', maxWidth: 440, lineHeight: 1.6 }}>{hint}</div>}
+      {action}
+    </div>
+  );
+}
+
+/** Neutral informational block (success / notice). */
+export function InfoBlock({
+  title, children, tone = 'info', center,
+}: { title?: string; children: React.ReactNode; tone?: 'info' | 'success' | 'caution'; center?: boolean }) {
+  const t = tone === 'success'
+    ? { color: 'var(--clear)', border: 'var(--clear)', wash: 'var(--clear-wash)' }
+    : tone === 'caution'
+      ? { color: 'var(--caution)', border: 'var(--caution)', wash: 'var(--caution-wash)' }
+      : { color: 'var(--plex)', border: 'var(--plex)', wash: 'var(--plex-wash)' };
+  return (
+    <div style={{ border: `1px solid ${t.border}`, borderLeft: `4px solid ${t.border}`, borderRadius: 'var(--radius)', background: t.wash, padding: '14px 18px', margin: '8px 0', ...(center ? { textAlign: 'center' } : {}) }}>
+      {title && <div className="mono" style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: t.color, marginBottom: 5 }}>{title}</div>}
+      <div style={{ fontSize: 13.5, color: 'var(--ink)', lineHeight: 1.55 }}>{children}</div>
+    </div>
+  );
+}
+
 /* ── Responsive site navigation ────────────────────────────────────────── */
 
 const NAV_LINKS = [

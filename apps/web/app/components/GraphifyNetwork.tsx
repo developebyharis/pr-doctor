@@ -4,10 +4,10 @@
  * Shared Graphify blast-radius graph visualisation.
  *
  * Renders the 1-hop dependency subgraph for a PR's changed files as an
- * interactive force-directed network (vis-network), exactly like the reference
- * Graphify viewer (packages/graphify-out/graph.html): changed files appear as
- * prominent hub nodes, their neighbours as community-coloured nodes, connected
- * by the real import/reference edges from the committed graph snapshot. Click a
+ * interactive force-directed network (vis-network): changed files appear as
+ * highlighted nodes, prominent hub nodes and their neighbours as
+ * community-coloured nodes, connected by the real import/reference edges from
+ * the committed graph snapshot (apps/web/fixtures/graphify-graph.json). Click a
  * node to see its file and connection count.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';

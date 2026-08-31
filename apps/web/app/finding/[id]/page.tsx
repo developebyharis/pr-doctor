@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import type { AgentReport, FinalVerdict, Finding, Severity } from '@/lib/types';
 import { Shell, mono } from '@/app/components/ui';
+import { ErrorBlock, LoadingBlock, EmptyBlock } from '@/app/components/ui';
 
 const SEV_STYLE: Record<Severity, { color: string; borderColor: string; background: string }> = {
   critical: { color: 'var(--block)', borderColor: 'var(--block)', background: 'var(--block-wash)' },
@@ -19,14 +20,6 @@ function parseDiff(raw: string): { type: 'del' | 'add' | 'ctx'; text: string }[]
     if (line.startsWith('+') && !line.startsWith('+++')) return { type: 'add', text: line };
     return { type: 'ctx', text: line };
   });
-}
-
-function statusPill({ label, color, dashed = false }: { label: string; color: string; dashed?: boolean }) {
-  return (
-    <div className="mono" style={{ fontSize: 13, color, border: `1px ${dashed ? 'dashed' : 'solid'} ${color}`, padding: '8px 14px', borderRadius: 'var(--radius-sm)' }}>
-      {label}
-    </div>
-  );
 }
 
 export default function FindingPage() {
@@ -47,13 +40,21 @@ export default function FindingPage() {
 
   if (error) {
     return (
-      <Shell maxW={1060}>{statusPill({ label: error, color: 'var(--block)' })}</Shell>
+      <Shell maxW={1060}>
+        <div style={{ paddingTop: 28 }}>
+          <ErrorBlock title="Couldn't load this finding" message={error} detail="The verdict for this finding could not be retrieved." />
+        </div>
+      </Shell>
     );
   }
 
   if (!verdict) {
     return (
-      <Shell maxW={1060}><div className="mono" style={{ fontSize: 13, color: 'var(--muted)' }}>Loading…</div></Shell>
+      <Shell maxW={1060}>
+        <div style={{ paddingTop: 28 }}>
+          <LoadingBlock label="Loading finding…" sub="Fetching the verdict that produced this finding." minHeight={220} />
+        </div>
+      </Shell>
     );
   }
 
@@ -68,8 +69,14 @@ export default function FindingPage() {
   if (!finding || !report) {
     return (
       <Shell maxW={1060}>
-        <p className="mono" style={{ fontSize: 13, color: 'var(--ink)' }}>Finding not found.</p>
-        <Link href="/investigation" style={{ ...mono, fontSize: 12, color: 'var(--plex)', textDecoration: 'none' }}>&larr; Back to investigation</Link>
+        <div style={{ paddingTop: 28 }}>
+          <EmptyBlock
+            label="Finding not found"
+            hint={`No finding with id "${id}" exists in this verdict.`}
+            actionLabel="Back to investigation"
+            actionHref="/investigation"
+          />
+        </div>
       </Shell>
     );
   }

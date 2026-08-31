@@ -7,6 +7,7 @@ import { allFindings } from '@/lib/types';
 import type { GraphifyContextResponse } from '@/app/api/graphify/route';
 import { GraphifyNetwork, graphC } from '@/app/components/GraphifyNetwork';
 import { Shell } from '@/app/components/ui';
+import { ErrorBlock, LoadingBlock, InfoBlock } from '@/app/components/ui';
 
 interface JobProgress {
   agent: AgentId;
@@ -666,16 +667,12 @@ export default function InvestigationPage() {
 
         {/* Live-run fallback note — only when a real analysis degraded to fixture */}
         {analysisError && verdict && (
-          <div style={{ background: 'var(--caution-wash)', border: '1px solid var(--caution)', borderRadius: 'var(--radius)', padding: '13px 20px', marginBottom: 20, fontFamily: '"IBM Plex Mono", monospace', fontSize: 12.5, color: 'var(--caution)' }}>
-            {analysisError}
-          </div>
+          <InfoBlock tone="caution" title="Live IBM BOB unavailable — showing fallback data">{analysisError}</InfoBlock>
         )}
 
         {/* Error state */}
         {error && (
-          <div style={{ background: 'var(--block-wash)', border: '1px solid var(--block)', borderRadius: 'var(--radius)', padding: '14px 20px', marginBottom: 20, fontFamily: '"IBM Plex Mono", monospace', fontSize: 13, color: 'var(--block)' }}>
-            {error}
-          </div>
+          <ErrorBlock title="Couldn't start the investigation" message={error} detail="Return to the pull request and try again, or start a new analysis." />
         )}
 
         {/* Verdict triage tag — shown only after verdict arrives */}
@@ -853,9 +850,7 @@ export default function InvestigationPage() {
 
           {/* Loading state — no data yet */}
           {!verdict && progress.length === 0 && !error && (
-            <div style={{ padding: '32px 26px', fontFamily: '"IBM Plex Mono", monospace', fontSize: 13, color: '#6B7280' }}>
-              Starting investigation…
-            </div>
+            <LoadingBlock label="Starting investigation…" sub="Spinning up the four IBM BOB 2.0 specialist agents. This takes a few seconds." minHeight={140} />
           )}
 
           {/* Graphify context panel — shown after verdict; renders the

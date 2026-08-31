@@ -12,8 +12,6 @@ Pointer/
 ├── apps/
 │   ├── web/                  # Next.js front-end (PR Doctor UI)
 │   └── api/                  # Express + TypeScript ingestion service (port of the old Python service)
-├── packages/
-│   └── graphify-out/         # Committed graph snapshot (nodes + edges)
 ├── package.json              # Root — pnpm workspace scripts
 └── pnpm-workspace.yaml       # Declares apps/* as workspaces
 ```
@@ -105,7 +103,7 @@ apps/web (Next.js)
   └── /api/github/*       proxies PR list/detail to apps/api
         │
         ├── lib/bob-adapter.ts   — only file that calls `bob run`
-        └── lib/graphify.ts      — reads packages/graphify-out/graph.json
+        └── lib/graphify.ts      — reads apps/web/fixtures/graphify-graph.json
 
 apps/api (Express + TypeScript)
   ├── GET  /github/prs            Live paginated list of open PRs (proxies client token to GitHub)
