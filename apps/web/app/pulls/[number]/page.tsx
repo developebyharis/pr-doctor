@@ -6,6 +6,7 @@ import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import type { GithubPRDetail, GithubFileDiff } from '@/app/api/github/prs/[number]/route';
 import type { GraphifyContextResponse } from '@/app/api/graphify/route';
 import { readRepo, readToken } from '@/lib/token-store';
+import { GraphifyNetwork, graphC, buildGraphLayout } from '@/app/components/GraphifyNetwork';
 
 const C = {
   bg: '#E9ECEF',
@@ -145,34 +146,16 @@ function FileCard({ file }: { file: GithubFileDiff }) {
   );
 }
 
-// ── Graphify blast-radius panel ──────────────────────────────────────────────
-// Built from the Graphify subgraph for this PR's real changed files. If the
-// repo isn't in the committed graph snapshot, shows an honest "not indexed"
-// state rather than fabricating blast radius.
-const graphC = {
-  bg: '#E9ECEF',
-  chart: '#FFFFFF',
-  ink: '#14181C',
-  muted: '#68757F',
-  rule: '#D2D8DD',
-  ruleStrong: '#AEB8C0',
-  plex: '#24408E',
-  plexWash: '#EDF0F8',
-  block: '#B3261E',
-  blockWash: '#FBEDEC',
-  clear: '#1F6B45',
-  clearWash: '#E9F2EC',
-  caution: '#8A5A00',
-  cautionWash: '#FCF8EF',
-};
 
 function GraphifyBlastPanel({ ctx, repo }: { ctx: GraphifyContextResponse; repo: string }) {
+  // console.log("ctc",ctx)
+  const layout = ctx.indexed ? buildGraphLayout(ctx) : null;
   return (
     <div style={{ marginTop: 24, border: `1px solid ${graphC.ruleStrong}`, background: graphC.chart }}>
       {/* Header */}
       <div style={{ padding: '14px 20px', borderBottom: `1px solid ${graphC.rule}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' as const }}>
         <div style={{ ...mono, fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: graphC.plex }}>
-          Graphify — blast radius &amp; dependency context
+          Graphify — blast radius &amp; dependency graph
         </div>
         <div style={{ ...mono, fontSize: 10, color: ctx.indexed ? graphC.clear : graphC.caution, border: `1px dashed ${ctx.indexed ? graphC.clear : graphC.caution}`, padding: '2px 7px', background: ctx.indexed ? graphC.clearWash : graphC.cautionWash }}>
           {ctx.indexed ? 'Files found in graph' : 'Repo not indexed by Graphify'}
@@ -187,7 +170,7 @@ function GraphifyBlastPanel({ ctx, repo }: { ctx: GraphifyContextResponse; repo:
               {[
                 { label: 'Graph nodes', value: ctx.graphStats.totalNodes },
                 { label: 'Graph edges', value: ctx.graphStats.totalEdges },
-                { label: 'Changed symbols found', value: ctx.changedNodes.length },
+                { label: 'Changed symbols', value: ctx.changedNodes.length },
                 { label: 'Direct connections', value: ctx.neighbours.length },
               ].map(s => (
                 <div key={s.label}>
@@ -197,44 +180,22 @@ function GraphifyBlastPanel({ ctx, repo }: { ctx: GraphifyContextResponse; repo:
               ))}
             </div>
 
-            {/* Changed symbols in this PR */}
-            <div style={{ fontSize: 14, color: graphC.ink, marginBottom: 8, fontWeight: 600 }}>Symbols in this PR&apos;s changed files</div>
-            {ctx.changedNodes.length > 0 ? (
-              <div style={{ marginBottom: 20 }}>
-                {ctx.changedNodes.map(n => (
-                  <div key={n.id} style={{ padding: '8px 12px', border: `1px solid ${graphC.rule}`, marginBottom: 6, background: graphC.plexWash }}>
-                    <div style={{ ...mono, fontSize: 12.5, color: graphC.ink }}>{n.label}</div>
-                    <div style={{ ...mono, fontSize: 11, color: graphC.muted, marginTop: 2 }}>{n.location} · {n.community}</div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ marginBottom: 20, padding: '12px 14px', border: `1px dashed ${graphC.ruleStrong}`, ...mono, fontSize: 12, color: graphC.muted }}>
-                No indexed symbols found in the changed files.
-              </div>
-            )}
+            {/* Dependency graph */}
+            <div style={{ fontSize: 14, color: graphC.ink, marginBottom: 6, fontWeight: 600 }}>
+              Blast radius
+            </div>
+            <div style={{ ...mono, fontSize: 11, color: graphC.muted, marginBottom: 12 }}>
+              {ctx.changedNodes.length} symbols across {layout?.changedFiles.length ?? 0} changed files reach {ctx.neighbours.length} direct connections across {layout?.neighbourFiles.length ?? 0} dependency files (capped to the most-connected).
+            </div>
 
-            {/* Direct connections */}
-            <div style={{ fontSize: 14, color: graphC.ink, marginBottom: 8, fontWeight: 600 }}>Direct connections (1 hop)</div>
-            {ctx.neighbours.length > 0 ? (
-              <div style={{ marginBottom: 20 }}>
-                {ctx.neighbours.map((n, i) => (
-                  <div key={`${n.id}-${i}`} style={{ padding: '7px 12px', border: `1px solid ${graphC.rule}`, marginBottom: 6 }}>
-                    <span style={{ ...mono, fontSize: 12, color: graphC.ink }}>{n.id}</span>
-                    <span style={{ ...mono, fontSize: 11, color: graphC.muted, marginLeft: 10 }}>
-                      {n.direction === 'out' ? 'called →' : '← called by'} {n.relation} · {n.file}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ marginBottom: 20, ...mono, fontSize: 12, color: graphC.muted }}>No connections found.</div>
-            )}
+            <div style={{ border: `1px solid ${graphC.rule}`, background: graphC.chart, padding: 8 }}>
+              <GraphifyNetwork ctx={ctx} />
+            </div>
 
             {/* Communities */}
             {ctx.touchedCommunities.length > 0 && (
-              <div>
-                <div style={{ fontSize: 14, color: graphC.ink, marginBottom: 8, fontWeight: 600 }}>Communities touched</div>
+              <div style={{ marginTop: 18 }}>
+                <div style={{ fontSize: 12, color: graphC.muted, marginBottom: 8, fontWeight: 600, ...mono, letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>Communities touched</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
                   {ctx.touchedCommunities.map(c => (
                     <span key={c} style={{ ...mono, fontSize: 11, color: graphC.plex, background: graphC.plexWash, padding: '3px 8px' }}>{c}</span>
@@ -348,30 +309,30 @@ export default function PRDetailPage() {
     createdAt: pr.createdAt,
   };
 
-  console.log("context", context);
+  // console.log("context", context);
 
   try {
     const serialized = JSON.stringify(context);
 
-    console.log("serialized:", serialized);
-    console.log("sessionStorage:", sessionStorage);
+    // console.log("serialized:", serialized);
+    // console.log("sessionStorage:", sessionStorage);
 
     sessionStorage.setItem(
       'pr-doctor:pr-context',
       serialized
     );
 
-    console.log(
-      "AFTER SET:",
-      sessionStorage.getItem('pr-doctor:pr-context')
-    );
+    // console.log(
+    //   "AFTER SET:",
+    //   sessionStorage.getItem('pr-doctor:pr-context')
+    // );
 
     sessionStorage.removeItem('pr-doctor:investigation');
 
-    console.log(
-      "AFTER REMOVE:",
-      sessionStorage.getItem('pr-doctor:investigation')
-    );
+    // console.log(
+    //   "AFTER REMOVE:",
+    //   sessionStorage.getItem('pr-doctor:investigation')
+    // );
 
     router.push('/investigation');
   } catch (error) {

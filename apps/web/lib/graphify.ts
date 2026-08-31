@@ -41,11 +41,44 @@ function loadGraph(): GraphFile {
   return _graph;
 }
 
+/**
+ * Derive a human-readable label for the repo the committed graph was built on,
+ * from the common leading path of its source files. Falls back to 'unknown'.
+ */
+export function getGraphRepoLabel(): string {
+  const graph = loadGraph();
+  const files = graph.nodes
+    .map(n => n.source_file)
+    .filter(Boolean)
+    .map(f => f.split('/'));
+  if (files.length === 0) return 'unknown';
+  const first = files[0];
+  const common: string[] = [];
+  for (let i = 0; i < first.length; i++) {
+    const seg = first[i];
+    if (files.every(f => f[i] === seg)) common.push(seg);
+    else break;
+  }
+  // Trim to at most the top 3 directory levels so the label stays readable.
+  return common.slice(0, 3).join('/') || (common[0] ?? 'unknown');
+}
+
+export interface GraphifyChangeEdge {
+  /** id of a node in a changed file */
+  source: string;
+  /** id of the 1-hop neighbour node */
+  target: string;
+  relation: string;
+  direction: 'out' | 'in';
+}
+
 export interface GraphifyContext {
   /** Nodes that live in one of the changed files */
-  changedNodes: { id: string; label: string; location: string; community: string }[];
+  changedNodes: { id: string; label: string; location: string; community: string; file: string }[];
   /** Direct neighbours (1 hop) reachable from changedNodes */
-  neighbours: { id: string; label: string; file: string; relation: string; direction: 'out' | 'in' }[];
+  neighbours: { id: string; label: string; file: string; relation: string; direction: 'out' | 'in'; community: string }[];
+  /** Edges from a changed node to a 1-hop neighbour (for graph rendering) */
+  changeEdges: GraphifyChangeEdge[];
   /** Communities touched by the change */
   touchedCommunities: string[];
   /** Total graph stats for orientation */
@@ -92,6 +125,7 @@ export function getGraphifyContext(changedFilePaths: string[]): GraphifyContext 
       file: peer?.source_file ?? '',
       relation: e.relation,
       direction: (isOut ? 'out' : 'in') as 'out' | 'in',
+      community: peer?.community_name ?? '',
     };
   });
 
@@ -108,8 +142,18 @@ export function getGraphifyContext(changedFilePaths: string[]): GraphifyContext 
       label: n.label,
       location: `${n.source_file} ${n.source_location}`,
       community: n.community_name,
+      file: n.source_file,
     })),
     neighbours,
+    changeEdges: relevantEdges.map(e => {
+      const isOut = changedIds.has(e.source);
+      return {
+        source: e.source,
+        target: e.target,
+        relation: e.relation,
+        direction: (isOut ? 'out' : 'in') as 'out' | 'in',
+      };
+    }),
     touchedCommunities,
     graphStats: {
       totalNodes: graph.nodes.length,

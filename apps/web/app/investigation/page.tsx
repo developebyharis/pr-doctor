@@ -5,6 +5,7 @@ import Link from 'next/link';
 import type { AgentId, AgentStatus, BlastRadius, FinalVerdict, Finding, PRContext, Severity } from '@/lib/types';
 import { allFindings } from '@/lib/types';
 import type { GraphifyContextResponse } from '@/app/api/graphify/route';
+import { GraphifyNetwork, graphC } from '@/app/components/GraphifyNetwork';
 
 interface JobProgress {
   agent: AgentId;
@@ -113,27 +114,22 @@ function FindingRow({ f, agentLabel, jobId }: { f: Finding; agentLabel: string; 
 }
 
 // ── Graphify Panel ────────────────────────────────────────────────────────────
-
-// The demo PR is acme/ledger-api (a TypeScript codebase). The committed graph
-// snapshot was built on the apps/integration Python service — a different
-// workspace intentionally included to show how Graphify works on a real repo.
-// In a live deployment, Graphify would run on the target repo before analysis.
-// We surface the graph stats and community map to explain the mechanism.
-const DEMO_GRAPH_COMMUNITIES = [
-  { name: 'PR Ingestion Pipeline', nodes: 22, description: 'ingest_pr → _parse_files → _detect_heuristics → PRRecord' },
-  { name: 'CLI Command Layer', nodes: 18, description: 'ingest / ingest_open / list / serve commands' },
-  { name: 'FastAPI REST Endpoints', nodes: 9, description: 'GET /prs · POST /ingest · DELETE /prs/{n}' },
-  { name: 'Settings and Storage', nodes: 10, description: 'TinyDB-backed local store + BaseSettings' },
-  { name: 'PRRecord Data Models', nodes: 6, description: 'PRRecord · FileDiff · RiskHeuristic · RiskLevel' },
-  { name: 'PR Doctor Agent Subagents', nodes: 6, description: 'Code-Change · Tester · Security · Documentation' },
-];
-
-function GraphifyPanel({ files }: { files: string[] }) {
+// The demo PR (acme/ledger-api) isn't part of the committed snapshot, which is
+// now the real excalidraw/excalidraw monorepo (packages/*). So the panel
+// honestly reports "not indexed" while showing the real snapshot stats. When the
+// analyzed repo IS in the graph (a PR opened against a covered repo), it renders
+// the interactive dependency graph for the PR's changed files — the same
+// visualisation used on the PR detail page.
+function GraphifyPanel({ files, blastRadius }: { files: string[]; blastRadius: BlastRadius }) {
   const [ctx, setCtx] = useState<GraphifyContextResponse | null>(null);
+  // Depend on a stable string key, not the `files` array reference — the parent
+  // creates a new array each render, which would otherwise refire the fetch
+  // (and hammer the Graphify API) on every re-render.
+  const filesKey = files.join(',');
 
   useEffect(() => {
     let cancelled = false;
-    const query = files.length > 0 ? `?files=${encodeURIComponent(files.join(','))}` : '';
+    const query = filesKey.length > 0 ? `?files=${encodeURIComponent(filesKey)}` : '';
     fetch(`/api/graphify${query}`)
       .then(r => r.json())
       .then(data => {
@@ -143,111 +139,135 @@ function GraphifyPanel({ files }: { files: string[] }) {
     return () => {
       cancelled = true;
     };
-  }, [files]);
+  }, [filesKey]);
 
   if (!ctx) return null;
 
   return (
     <div style={{ padding: '20px 26px', borderTop: '1px solid #D2D8DD' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, marginBottom: 14, flexWrap: 'wrap' }}>
-        <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#68757F' }}>
-          Graphify — dependency context fed to agents
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+        <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: graphC.plex }}>
+          Graphify — blast radius &amp; dependency graph
         </div>
-        <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, color: '#8A5A00', border: '1px dashed #8A5A00', padding: '2px 7px', background: '#FCF8EF' }}>
-          Built on apps/integration workspace
+        <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, color: ctx.indexed ? graphC.clear : graphC.caution, border: `1px dashed ${ctx.indexed ? graphC.clear : graphC.caution}`, padding: '2px 7px', background: ctx.indexed ? graphC.clearWash : graphC.cautionWash }}>
+          {ctx.indexed ? `${ctx.indexedRepo} indexed` : 'Not indexed by Graphify'}
         </div>
       </div>
 
-      {/* Honest indexed status for the PR being analyzed */}
-      {ctx.indexed === false && (
-        <div style={{ background: '#FCF8EF', border: '1px solid #D2D8DD', borderLeft: '4px solid #8A5A00', padding: '12px 16px', marginBottom: 20 }}>
-          <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#8A5A00', marginBottom: 6 }}>
-            This repo isn&apos;t in the graph snapshot
+      {ctx.indexed ? (
+        <>
+          {/* Stats strip */}
+          <div style={{ display: 'flex', gap: 32, marginBottom: 20, flexWrap: 'wrap' }}>
+            {[
+              { label: 'Graph nodes', value: ctx.graphStats.totalNodes },
+              { label: 'Graph edges', value: ctx.graphStats.totalEdges },
+              { label: 'Changed symbols', value: ctx.changedNodes.length },
+              { label: 'Direct connections', value: ctx.neighbours.length },
+            ].map(s => (
+              <div key={s.label}>
+                <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: graphC.muted, marginBottom: 3 }}>{s.label}</div>
+                <div style={{ fontFamily: '"IBM Plex Sans Condensed", sans-serif', fontWeight: 700, fontSize: 26, lineHeight: 1, color: graphC.plex }}>{s.value}</div>
+              </div>
+            ))}
           </div>
-          <div style={{ fontSize: 13, lineHeight: 1.6, color: '#14181C' }}>
-            None of this PR&apos;s changed files map to symbols in the committed graph ({ctx.graphStats.totalNodes} nodes ·{' '}
-            {ctx.graphStats.totalEdges} edges). The graph was built on a different workspace. In production, Graphify
-            runs on the target repo before analysis, so every changed file resolves to its call sites. Nothing here is
-            fabricated — the community map and god nodes below are shown to explain the mechanism on the workspace
-            that <em>is</em> indexed.
+
+          {/* Blast-radius graph */}
+          <div style={{ fontSize: 14, color: graphC.ink, marginBottom: 8, fontWeight: 600 }}>Blast radius</div>
+          <div style={{ border: `1px solid ${graphC.rule}`, background: graphC.chart, padding: 8, marginBottom: 20 }}>
+            <GraphifyNetwork ctx={ctx} />
           </div>
-        </div>
+
+          {/* How it connects to the agents */}
+          <div style={{ background: graphC.plexWash, border: '1px solid #AEB8C0', borderLeft: '4px solid #24408E', padding: '12px 16px', marginBottom: 20 }}>
+            <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: graphC.plex, marginBottom: 6 }}>
+              How Graphify powers the agents
+            </div>
+            <div style={{ fontSize: 13.5, lineHeight: 1.6, color: graphC.ink }}>
+              Before each BOB agent runs, PR Doctor queries this graph for every changed file and extracts the 1-hop
+              neighbour subgraph. That subgraph — symbols, call edges, and communities — is injected directly into the
+              agent prompt, letting each role reason about actual blast radius instead of guessing from the diff.
+            </div>
+          </div>
+
+          {/* Communities */}
+          {ctx.touchedCommunities.length > 0 && (
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: graphC.muted, marginBottom: 8 }}>
+                Communities touched
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {ctx.touchedCommunities.map(c => (
+                  <span key={c} style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, color: graphC.plex, background: graphC.plexWash, padding: '3px 8px' }}>{c}</span>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          {/* Honest indexed status for the PR being analyzed */}
+          <div style={{ background: graphC.cautionWash, border: '1px solid #D2D8DD', borderLeft: '4px solid #8A5A00', padding: '12px 16px', marginBottom: 20 }}>
+            <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: graphC.caution, marginBottom: 6 }}>
+              This repo isn&apos;t in the graph snapshot
+            </div>
+            <div style={{ fontSize: 13, lineHeight: 1.6, color: graphC.ink }}>
+              None of this PR&apos;s changed files map to symbols in the committed graph — which is the{' '}
+              {ctx.indexedRepo || 'excalidraw/excalidraw'} monorepo ({ctx.graphStats.totalNodes} nodes ·{' '}
+              {ctx.graphStats.totalEdges} edges). In production, Graphify runs on the target repo before analysis, so
+              every changed file resolves to its call sites. Nothing here is fabricated: this panel only renders a real
+              blast-radius graph when the analyzed repo is actually in the snapshot.
+            </div>
+          </div>
+
+          {/* Stats strip */}
+          <div style={{ display: 'flex', gap: 32, marginBottom: 20, flexWrap: 'wrap' }}>
+            {[
+              { label: 'Graph nodes', value: ctx.graphStats.totalNodes },
+              { label: 'Graph edges', value: ctx.graphStats.totalEdges },
+              { label: 'Changed files queried', value: files.length },
+              { label: 'Snapshot repo', value: ctx.indexedRepo || '—' },
+            ].map(s => (
+              <div key={s.label}>
+                <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: graphC.muted, marginBottom: 3 }}>{s.label}</div>
+                <div style={{ fontFamily: '"IBM Plex Sans Condensed", sans-serif', fontWeight: 700, fontSize: 26, lineHeight: 1, color: graphC.plex }}>{s.value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* How it connects to the agents — the key demo talking point */}
+          <div style={{ background: graphC.plexWash, border: '1px solid #AEB8C0', borderLeft: '4px solid #24408E', padding: '12px 16px', marginBottom: 20 }}>
+            <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: graphC.plex, marginBottom: 6 }}>
+              How Graphify powers the agents
+            </div>
+            <div style={{ fontSize: 13.5, lineHeight: 1.6, color: graphC.ink }}>
+              Before each BOB agent runs, PR Doctor queries this graph for every changed file and extracts the 1-hop
+              neighbour subgraph — symbols, call edges, and communities — and injects it directly into the agent prompt.
+              This is why the analysis could pinpoint <code style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, background: '#F6F8F9', border: '1px solid #D2D8DD', padding: '1px 4px' }}>billing/refund.ts:88</code> as{' '}
+              the downstream blast radius: the graph told it to look there, not the diff.
+            </div>
+          </div>
+
+          <div style={{ marginTop: 14, fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, color: graphC.muted, borderTop: '1px solid #D2D8DD', paddingTop: 10 }}>
+            In production, Graphify runs on the target repo before analysis begins. The context packet is then injected
+            into every agent prompt — no agent needs to grep the codebase; the graph does that work upfront.
+          </div>
+
+          {/* Derived blast radius — analysis verdict, shown since the graph isn't indexed */}
+          {blastRadius && (
+            <div style={{ marginTop: 24 }}>
+              <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: graphC.muted, marginBottom: 12 }}>
+                Blast radius — derived from analysis (repo not in graph)
+              </div>
+              <RiskGraph br={blastRadius} />
+            </div>
+          )}
+        </>
       )}
-
-      {/* Stats strip */}
-      <div style={{ display: 'flex', gap: 32, marginBottom: 20, flexWrap: 'wrap' }}>
-        {[
-          { label: 'Graph nodes', value: ctx.graphStats.totalNodes },
-          { label: 'Graph edges', value: ctx.graphStats.totalEdges },
-          { label: 'Communities', value: DEMO_GRAPH_COMMUNITIES.length },
-          { label: 'Extraction accuracy', value: '89%' },
-          { label: 'Inferred edges', value: '23' },
-        ].map(s => (
-          <div key={s.label}>
-            <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#68757F', marginBottom: 3 }}>{s.label}</div>
-            <div style={{ fontFamily: '"IBM Plex Sans Condensed", sans-serif', fontWeight: 700, fontSize: 26, lineHeight: 1, color: '#24408E' }}>{s.value}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* How it connects to the agents — the key demo talking point */}
-      <div style={{ background: '#EDF0F8', border: '1px solid #AEB8C0', borderLeft: '4px solid #24408E', padding: '12px 16px', marginBottom: 20 }}>
-        <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#24408E', marginBottom: 6 }}>
-          How Graphify powers the agents
-        </div>
-        <div style={{ fontSize: 13.5, lineHeight: 1.6, color: '#14181C' }}>
-          Before each BOB agent runs, PR Doctor queries this graph for every changed file and extracts the 1-hop
-          neighbour subgraph. That subgraph — symbols, call edges, and communities — is injected directly into
-          the agent prompt. This is why Test &amp; Security could pinpoint <code style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, background: '#F6F8F9', border: '1px solid #D2D8DD', padding: '1px 4px' }}>billing/refund.ts:88</code> as
-          the downstream blast radius: the graph told it to look there, not the diff.
-        </div>
-      </div>
-
-      {/* Communities grid */}
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#68757F', marginBottom: 10 }}>
-          Detected communities — structural map of the codebase
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 1, background: '#AEB8C0', border: '1px solid #AEB8C0' }}>
-          {DEMO_GRAPH_COMMUNITIES.map(c => (
-            <div key={c.name} style={{ background: '#FFFFFF', padding: '10px 14px' }}>
-              <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 3 }}>{c.name}</div>
-              <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10.5, color: '#68757F', marginBottom: 4 }}>{c.description}</div>
-              <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, color: '#24408E' }}>{c.nodes} nodes</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* God nodes */}
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#68757F', marginBottom: 8 }}>
-          God nodes — most connected (highest blast radius potential)
-        </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-          {[
-            { label: 'PRRecord', edges: 16 },
-            { label: 'Settings', edges: 14 },
-            { label: 'ingest_pr()', edges: 13 },
-            { label: 'upsert_pr()', edges: 12 },
-            { label: 'list_open_prs()', edges: 10 },
-          ].map(n => (
-            <div key={n.label} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#F6F8F9', border: '1px solid #D2D8DD', padding: '4px 10px' }}>
-              <code style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, color: '#14181C' }}>{n.label}</code>
-              <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, color: '#B3261E' }}>{n.edges} edges</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div style={{ marginTop: 14, fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, color: '#68757F', borderTop: '1px solid #D2D8DD', paddingTop: 10 }}>
-        In production, Graphify runs on the target repo before analysis begins. The context packet is then injected
-        into every agent prompt — no agent needs to grep the codebase; the graph does that work upfront.
-      </div>
     </div>
   );
 }
+
 
 // ── Risk Graph ────────────────────────────────────────────────────────────────
 
@@ -819,18 +839,10 @@ export default function InvestigationPage() {
             </div>
           )}
 
-          {/* Blast radius — shown after verdict */}
-          {verdict && (
-            <div style={{ padding: '20px 26px', borderTop: '1px solid #D2D8DD' }}>
-              <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#68757F', marginBottom: 14 }}>
-                Blast radius — Graphify
-              </div>
-              <RiskGraph br={verdict.blastRadius} />
-            </div>
-          )}
-
-          {/* Graphify context panel — shown after verdict */}
-          {verdict && <GraphifyPanel files={verdict.context.filesChanged.map(f => f.path)} />}
+          {/* Graphify context panel — shown after verdict; renders the
+              interactive blast-radius graph when the repo is indexed, otherwise
+              the honest not-indexed state with the derived blast radius. */}
+          {verdict && <GraphifyPanel files={verdict.context.filesChanged.map(f => f.path)} blastRadius={verdict.blastRadius} />}
         </div>
 
         {/* Back link */}

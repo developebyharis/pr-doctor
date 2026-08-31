@@ -25,12 +25,12 @@ async function main(): Promise<void> {
         console.error(USAGE);
         process.exit(1);
       }
-      console.log(`Ingesting PR #${prNumber} from ${settings.github_repo} …`);
+      // console.log(`Ingesting PR #${prNumber} from ${settings.github_repo} …`);
       const record = await ingestPr(prNumber, settings);
       upsertPr(record, settings);
-      console.log(`✓  Risk: ${record.overall_risk}  |  Heuristics: ${record.risk_heuristics.length}`);
+      // console.log(`✓  Risk: ${record.overall_risk}  |  Heuristics: ${record.risk_heuristics.length}`);
       for (const h of record.risk_heuristics) {
-        console.log(`   [${h.level}] ${h.rule}: ${h.description}`);
+        // console.log(`   [${h.level}] ${h.rule}: ${h.description}`);
       }
       break;
     }
@@ -38,10 +38,10 @@ async function main(): Promise<void> {
     case 'ingest-open': {
       const limitIdx = args.indexOf('--limit');
       const limit = limitIdx >= 0 ? Number(args[limitIdx + 1]) || 20 : 20;
-      console.log(`Fetching up to ${limit} open PRs from ${settings.github_repo} …`);
+      // console.log(`Fetching up to ${limit} open PRs from ${settings.github_repo} …`);
       const records = await listOpenPrs(settings, limit);
       for (const r of records) upsertPr(r, settings);
-      console.log(`✓  Ingested ${records.length} PRs.`);
+      // console.log(`✓  Ingested ${records.length} PRs.`);
       break;
     }
 
@@ -52,7 +52,7 @@ async function main(): Promise<void> {
         console.error(`PR #${prNumber} not found. Run \`ingest ${prNumber}\` first.`);
         process.exit(1);
       }
-      console.log(JSON.stringify(record, null, 2));
+      // console.log(JSON.stringify(record, null, 2));
       break;
     }
 

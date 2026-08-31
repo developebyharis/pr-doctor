@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getGraphifyContext, type GraphifyContext } from '@/lib/graphify';
+import { getGraphifyContext, getGraphRepoLabel, type GraphifyContext } from '@/lib/graphify';
 
 export interface GraphifyContextResponse extends GraphifyContext {
   /** The changed file paths that were queried. */
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
     ...ctx,
     files,
     indexed,
-    indexedRepo: 'apps/web',
+    indexedRepo: getGraphRepoLabel(),
   };
 
   return NextResponse.json(response);

@@ -1,6 +1,6 @@
 # `packages/graphify-out` — Graphify Graph Snapshot
 
-Committed output of **IBM Graphify** run over the PR Doctor codebase. This snapshot is consumed by the web app (`apps/web`) to give IBM BOB 2.0 agents a dependency graph context when they analyse a pull request — letting them trace blast radius through real call relationships instead of guessing.
+Committed output of **IBM Graphify** run over the **excalidraw/excalidraw** monorepo (`packages/*`). This snapshot is consumed by the web app (`apps/web`) to give IBM BOB 2.0 agents a dependency graph context when they analyse a pull request — letting them trace blast radius through real call relationships instead of guessing.
 
 ---
 
@@ -15,16 +15,18 @@ IBM Graphify is a static analysis tool that reads a codebase, extracts symbols a
 
 ---
 
-## Snapshot stats (built 2026-08-29)
+## Snapshot stats
 
 | Metric | Value |
 |---|---|
-| Nodes | 111 |
-| Edges | 217 |
-| Communities | 13 |
-| Extraction quality | 89% extracted · 11% inferred · 0% ambiguous |
-| Inferred edges (avg confidence) | 23 edges · 0.94 |
-| Files indexed | 16 |
+| Nodes | 2845 |
+| Edges | 4039 |
+| Communities | 7 |
+| Extraction | import/reference edges resolved from actual TS/TSX source |
+| Inferred edges (avg confidence) | 0.94 |
+| Files indexed | 572 |
+
+Built from the real `packages/*` source of `excalidraw/excalidraw` (a monorepo with `element`, `common`, `math`, `utils`, `laser-pointer`, `fractional-indexing`, `excalidraw`). Nodes are exported symbols plus one module node per file; edges are `imports`/`references` relationships resolved from each file's import statements (relative + `@excalidraw/*` tsconfig aliases). Analyzing a PR against this repo yields genuine blast radius.
 
 ---
 
