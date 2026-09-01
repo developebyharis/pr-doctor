@@ -13,9 +13,9 @@
     "install:web": "pnpm --filter pr-doctor install",
     "install:api": "pnpm --filter pr-doctor-api install",
     "setup": "pnpm install && pnpm --filter pr-doctor-api install",
-    "api:ts:dev": "pnpm --filter pr-doctor-api dev",
-    "api:ts:build": "pnpm --filter pr-doctor-api build",
-    "api:ts:serve": "pnpm --filter pr-doctor-api serve"
+    "api:dev": "pnpm --filter pr-doctor-api dev",
+    "api:build": "pnpm --filter pr-doctor-api build",
+    "api:serve": "pnpm --filter pr-doctor-api serve"
   },
   "devEngines": {
     "packageManager": {

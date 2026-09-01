@@ -1,15 +1,4 @@
 'use client';
-
-/*
- * Shared Graphify blast-radius graph visualisation.
- *
- * Renders the 1-hop dependency subgraph for a PR's changed files as an
- * interactive force-directed network (vis-network): changed files appear as
- * highlighted nodes, prominent hub nodes and their neighbours as
- * community-coloured nodes, connected by the real import/reference edges from
- * the committed graph snapshot (apps/web/fixtures/graphify-graph.json). Click a
- * node to see its file and connection count.
- */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { GraphifyContextResponse } from '@/app/api/graphify/route';
 import type { Network as VisNetwork } from 'vis-network/standalone';
@@ -118,7 +107,7 @@ export function GraphifyNetwork({ ctx }: { ctx: GraphifyContextResponse }) {
           id: `cf:${cf}`,
           label: basename(cf),
           color: { background: graphC.plex, border: graphC.plex, highlight: { background: '#0e1e4f', border: '#0e1e4f' } },
-          font: { color: '#ffffff', size: 13, face: 'IBM Plex Mono' },
+          font: { color: '#00000', size: 13, face: 'IBM Plex Mono' },
           borderWidth: 1.5,
           size: 18,
           _source_file: cf,
